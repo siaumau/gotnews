@@ -34,6 +34,7 @@
             justify-content: center;
             gap: 15px;
             margin-bottom: 30px;
+            position: relative;
         }
 
         .btn {
@@ -309,6 +310,32 @@
             background: #f44336;
         }
 
+        .hamburger-btn {
+            display: none;
+            flex-direction: column;
+            justify-content: space-around;
+            width: 30px;
+            height: 30px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            z-index: 1010;
+        }
+
+        .hamburger-btn span {
+            width: 30px;
+            height: 3px;
+            background-color: white;
+            border-radius: 5px;
+            transition: all 0.3s linear;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+
         @media (max-width: 768px) {
             .articles-grid {
                 grid-template-columns: 1fr;
@@ -321,102 +348,44 @@
             }
             
             .controls {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-                max-width: 300px;
-                margin: 0 auto;
+                justify-content: flex-end;
+                padding-right: 20px;
             }
-            
-            .controls .btn {
+
+            .hamburger-btn {
+                display: flex;
+            }
+
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                gap: 10px;
+                position: absolute;
+                top: 45px;
+                right: 20px;
+                background: rgba(102, 126, 234, 0.95);
+                backdrop-filter: blur(5px);
+                padding: 15px;
+                border-radius: 10px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                z-index: 1000;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .nav-links .btn {
+                width: 100%;
+                justify-content: flex-start;
                 padding: 10px 16px;
                 font-size: 14px;
-                text-align: center;
             }
         }
         
         @media (max-width: 480px) {
-            .header {
-                padding: 10px;
-            }
-            
             .header h1 {
-                font-size: 1.5rem;
-                margin-bottom: 5px;
-            }
-            
-            .header p {
-                font-size: 0.9rem;
-                margin-bottom: 10px;
-            }
-            
-            .controls {
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 8px;
-                padding: 0 10px;
-            }
-            
-            .controls .btn {
-                flex: 1;
-                min-width: 120px;
-                max-width: 140px;
-                padding: 12px 8px;
-                font-size: 13px;
-                white-space: nowrap;
-                border-radius: 20px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .controls .btn:nth-child(1),
-            .controls .btn:nth-child(2) {
-                flex-basis: calc(50% - 4px);
-            }
-            
-            .controls .btn:nth-child(3),
-            .controls .btn:nth-child(4),
-            .controls .btn:nth-child(5) {
-                flex-basis: calc(33.33% - 6px);
-                min-width: 100px;
-                padding: 10px 6px;
-                font-size: 12px;
-            }
-            
-            .controls .btn .btn-icon {
-                margin-right: 4px;
-                font-size: 1em;
-            }
-            
-            .controls .btn .btn-text {
-                font-size: 0.85em;
-            }
-        }
-        
-        @media (max-width: 360px) {
-            .controls .btn:nth-child(3),
-            .controls .btn:nth-child(4),
-            .controls .btn:nth-child(5) {
-                flex-basis: calc(50% - 4px);
-                margin-bottom: 8px;
-            }
-            
-            .controls .btn .btn-text {
-                display: none;
-            }
-            
-            .controls .btn .btn-icon {
-                margin-right: 0;
-                font-size: 1.2em;
-            }
-            
-            .controls .btn {
-                min-width: 50px;
-                padding: 12px;
-                border-radius: 50%;
-                aspect-ratio: 1;
+                font-size: 1.8rem;
             }
         }
     </style>
@@ -428,30 +397,37 @@
     </div>
 
     <div class="controls">
-        <button id="updateBtn" class="btn btn-primary">
-            <span class="btn-icon">🔄</span>
-            <span class="btn-text">更新新聞</span>
+        <button id="hamburger-btn" class="hamburger-btn">
+            <span></span>
+            <span></span>
+            <span></span>
         </button>
-        <button id="showAllBtn" class="btn btn-secondary">
-            <span class="btn-icon">📰</span>
-            <span class="btn-text">所有新聞</span>
-        </button>
-        <button id="showFavoritesBtn" class="btn btn-secondary">
-            <span class="btn-icon">⭐</span>
-            <span class="btn-text">我的收藏</span>
-        </button>
-        <button id="vocabularyBtn" class="btn btn-secondary" onclick="window.open('/vocabulary', '_blank')">
-            <span class="btn-icon">📚</span>
-            <span class="btn-text">生字簿</span>
-        </button>
-        <button id="settingsBtn" class="btn btn-secondary" onclick="openSettingsModal()">
-            <span class="btn-icon">⚙️</span>
-            <span class="btn-text">設定</span>
-        </button>
-        <button id="clearTranslationsBtn" class="btn btn-secondary" onclick="clearTranslations()">
-            <span class="btn-icon">🗑️</span>
-            <span class="btn-text">清除翻譯</span>
-        </button>
+        <div id="nav-links" class="nav-links">
+            <button id="updateBtn" class="btn btn-primary">
+                <span class="btn-icon">🔄</span>
+                <span class="btn-text">更新新聞</span>
+            </button>
+            <button id="showAllBtn" class="btn btn-secondary">
+                <span class="btn-icon">📰</span>
+                <span class="btn-text">所有新聞</span>
+            </button>
+            <button id="showFavoritesBtn" class="btn btn-secondary">
+                <span class="btn-icon">⭐</span>
+                <span class="btn-text">我的收藏</span>
+            </button>
+            <button id="vocabularyBtn" class="btn btn-secondary" onclick="window.open('/vocabulary', '_blank')">
+                <span class="btn-icon">📚</span>
+                <span class="btn-text">生字簿</span>
+            </button>
+            <button id="settingsBtn" class="btn btn-secondary" onclick="openSettingsModal()">
+                <span class="btn-icon">⚙️</span>
+                <span class="btn-text">設定</span>
+            </button>
+            <button id="clearTranslationsBtn" class="btn btn-secondary" onclick="clearTranslations()">
+                <span class="btn-icon">🗑️</span>
+                <span class="btn-text">清除翻譯</span>
+            </button>
+        </div>
     </div>
 
     <div id="message"></div>
@@ -539,6 +515,11 @@
             document.getElementById('showAllBtn').addEventListener('click', () => showArticles('all'));
             document.getElementById('showFavoritesBtn').addEventListener('click', () => showArticles('favorites'));
             
+            // Hamburger Menu
+            document.getElementById('hamburger-btn').addEventListener('click', function() {
+                document.getElementById('nav-links').classList.toggle('active');
+            });
+
             // 學習模態框事件
             document.querySelector('.close').addEventListener('click', closeLearningModal);
             window.addEventListener('click', function(event) {
@@ -804,11 +785,11 @@
         async function openLearningModal(articleId) {
             const modal = document.getElementById('learningModal');
             const modalContent = document.getElementById('modalContent');
-            const modalLoading = document.getElementById('modalLoading');
+            
+            // 每次打開時都重置內容為載入中狀態
+            modalContent.innerHTML = '<div id="modalLoading" style="text-align: center; padding: 20px;">檢查翻譯快取...</div>';
             
             modal.style.display = 'block';
-            modalLoading.style.display = 'block';
-            modalLoading.textContent = '檢查翻譯快取...';
             
             console.log('🔍 Opening learning modal for article:', articleId);
             
@@ -844,7 +825,7 @@
                 }
                 
                 // 開始翻譯
-                modalLoading.textContent = '翻譯中，請稍候...';
+                document.getElementById('modalLoading').textContent = '翻譯中，請稍候...';
                 console.log('🔄 Starting translation for article:', articleId);
                 
                 const response = await fetch(`/api/articles/${articleId}/translate`, {
