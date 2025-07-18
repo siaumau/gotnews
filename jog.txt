@@ -1,0 +1,118 @@
+
+# 🔍 AI 新聞資料抓取與呈現系統
+
+## 📌 專案簡述
+本系統透過 [NewsAPI](https://newsapi.org) 擷取與「AI」相關的熱門新聞資料，儲存至 SQLite 資料庫。前端網頁提供 Flipboard 類似卡片式介面，能進行 **更新抓取、蒐藏與刪除管理**。
+
+---
+
+## 🧩 API 資訊來源
+
+- **API URL**：  
+  `https://newsapi.org/v2/everything?q=AI&from={DATE}&sortBy=popularity&apiKey={API_KEY}`
+
+- **回應格式（JSON）**：
+```json
+{
+  "status": "ok",
+  "totalResults": 5156,
+  "articles": [
+    {
+      "source": { "id": "wired", "name": "Wired" },
+      "author": "Molly Taft",
+      "title": "...",
+      "description": "...",
+      "url": "...",
+      "urlToImage": "...",
+      "publishedAt": "...",
+      "content": "..."
+    }
+  ]
+}
+```
+
+---
+
+## 🗃️ SQLite 資料表結構
+
+```sql
+CREATE TABLE IF NOT EXISTS articles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_name TEXT,
+    author TEXT,
+    title TEXT UNIQUE,
+    description TEXT,
+    url TEXT,
+    urlToImage TEXT,
+    publishedAt TEXT,
+    content TEXT,
+    is_favorite INTEGER DEFAULT 0
+);
+```
+
+---
+
+## 🔄 抓取邏輯
+
+- **按下更新按鈕後：**
+  1. 呼叫 API 抓取新聞資料（`from` 參數為當日或上次更新日）
+  2. 檢查 `title` 是否已存在於資料庫中
+  3. 新的資料才會插入資料表，避免重複儲存
+
+---
+
+## 🖼️ 前端畫面設計（仿 Flipboard）
+
+每篇新聞以卡片方式呈現：
+- 顯示：
+  - 圖片（`urlToImage`）
+  - 標題（`title`）
+  - 內文摘要（`description`）
+  - 發佈時間（`publishedAt`）
+- 操作按鈕：
+  - ⭐ 加入/取消蒐藏
+  - 🗑️ 刪除此篇文章
+
+---
+
+## 🧭 操作功能
+
+### 🔘 更新新聞資料
+- 點擊「更新」按鈕 → 呼叫 API 並更新資料庫
+
+### ⭐ 蒐藏/取消蒐藏
+- 點擊「⭐」將 `is_favorite` 欄位改為 1 或 0
+- UI 顯示狀態變更
+
+### 🗑️ 刪除新聞
+- 點擊「🗑️」按鈕 → 刪除該筆資料（`DELETE`）
+
+### 🔍 查看蒐藏列表
+- 顯示所有 `is_favorite = 1` 的文章
+
+---
+
+## 💡 備註功能可擴充
+- 查詢關鍵字變數（支援自定義）
+- 分頁顯示或 Lazy Load
+- 收藏文章另開新視窗顯示原始新聞內容
+
+---
+
+## 🗣️ English Conversation Practice (AI news theme)
+
+**A:** Have you read the latest AI news?  
+**B:** Not yet. Where can I find it?  
+**A:** I just clicked the update button and got fresh articles. Check out this one about Elon Musk’s AI boyfriend!  
+**B:** Wow, that sounds wild. Can I save it?  
+**A:** Yes, just hit the star icon!
+
+---
+
+### 🧠 生活用語小結：  
+「整理資料，就像整理房間一樣，資料有家，資訊更清楚！」
+
+---
+
+### 🎨 詮釋圖像：
+![示意圖](flipboard.png)

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 AI 新聞資料抓取與呈現系統</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .articles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .article-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .article-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+
+        .article-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: #f5f5f5;
+        }
+
+        .article-content {
+            padding: 20px;
+        }
+
+        .article-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        .article-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .article-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .article-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: #f0f0f0;
+            transform: scale(1.1);
+        }
+
+        .favorite-btn.active {
+            color: #FFD700;
+        }
+
+        .delete-btn:hover {
+            color: #f44336;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2rem;
+            margin: 50px 0;
+        }
+
+        .message {
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto 20px;
+        }
+
+        .message.error {
+            background: #f44336;
+        }
+
+        @media (max-width: 768px) {
+            .articles-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 0 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔍 AI 新聞資料抓取與呈現系統</h1>
+        <p>類似 Flipboard 的卡片式新聞瀏覽器</p>
+    </div>
+
+    <div class="controls">
+        <button id="updateBtn" class="btn btn-primary">🔄 更新新聞</button>
+        <button id="showAllBtn" class="btn btn-secondary">📰 所有新聞</button>
+        <button id="showFavoritesBtn" class="btn btn-secondary">⭐ 我的收藏</button>
+    </div>
+
+    <div id="message"></div>
+    <div id="loading" class="loading" style="display: none;">載入中...</div>
+    <div id="articlesGrid" class="articles-grid"></div>
+
+    <script>
+        let currentView = 'all';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadArticles();
+            
+            document.getElementById('updateBtn').addEventListener('click', updateNews);
+            document.getElementById('showAllBtn').addEventListener('click', () => showArticles('all'));
+            document.getElementById('showFavoritesBtn').addEventListener('click', () => showArticles('favorites'));
+        });
+
+        function showMessage(text, isError = false) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = isError ? 'message error' : 'message';
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        async function updateNews() {
+            const updateBtn = document.getElementById('updateBtn');
+            updateBtn.disabled = true;
+            updateBtn.textContent = '🔄 更新中...';
+            
+            try {
+                const response = await fetch('/api/update', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(`成功更新！獲取 ${data.total_fetched} 篇文章，新增 ${data.saved_count} 篇`);
+                    loadArticles();
+                } else {
+                    showMessage(data.message, true);
+                }
+            } catch (error) {
+                showMessage('更新失敗：' + error.message, true);
+            } finally {
+                updateBtn.disabled = false;
+                updateBtn.textContent = '🔄 更新新聞';
+            }
+        }
+
+        async function loadArticles() {
+            showLoading(true);
+            
+            try {
+                const url = currentView === 'favorites' ? '/api/articles?favorites=true' : '/api/articles';
+                const response = await fetch(url);
+                const articles = await response.json();
+                
+                renderArticles(articles);
+            } catch (error) {
+                showMessage('載入文章失敗：' + error.message, true);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function showArticles(view) {
+            currentView = view;
+            
+            document.getElementById('showAllBtn').className = view === 'all' ? 'btn btn-primary' : 'btn btn-secondary';
+            document.getElementById('showFavoritesBtn').className = view === 'favorites' ? 'btn btn-primary' : 'btn btn-secondary';
+            
+            loadArticles();
+        }
+
+        function renderArticles(articles) {
+            const grid = document.getElementById('articlesGrid');
+            
+            if (articles.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: white; font-size: 1.2rem;">沒有找到文章</div>';
+                return;
+            }
+            
+            grid.innerHTML = articles.map(article => `
+                <div class="article-card">
+                    <img src="${article.urlToImage || '/static/placeholder.jpg'}" 
+                         alt="${article.title}" 
+                         class="article-image"
+                         onerror="this.src='/static/placeholder.jpg'">
+                    <div class="article-content">
+                        <h3 class="article-title">${article.title}</h3>
+                        <div class="article-meta">
+                            <span>${article.source_name || '未知來源'}</span>
+                            <span>${new Date(article.publishedAt).toLocaleDateString('zh-TW')}</span>
+                        </div>
+                        <p class="article-description">${article.description || '無描述'}</p>
+                        <div class="article-actions">
+                            <button class="action-btn favorite-btn ${article.is_favorite ? 'active' : ''}" 
+                                    onclick="toggleFavorite(${article.id})">
+                                ⭐
+                            </button>
+                            <button class="action-btn delete-btn" onclick="deleteArticle(${article.id})">
+                                🗑️
+                            </button>
+                            <a href="${article.url}" target="_blank" style="color: #2196F3; text-decoration: none; margin-left: auto;">
+                                閱讀原文 →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function toggleFavorite(articleId) {
+            try {
+                const response = await fetch(`/api/articles/${articleId}/favorite`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    loadArticles();
+                } else {
+                    showMessage(data.message, true);
+                }
+            } catch (error) {
+                showMessage('操作失敗：' + error.message, true);
+            }
+        }
+
+        async function deleteArticle(articleId) {
+            if (!confirm('確定要刪除這篇文章嗎？')) return;
+            
+            try {
+                const response = await fetch(`/api/articles/${articleId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('文章已刪除');
+                    loadArticles();
+                } else {
+                    showMessage(data.message, true);
+                }
+            } catch (error) {
+                showMessage('刪除失敗：' + error.message, true);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+幫我額外多一個功能 我可以點刪除旁邊 要多一個學習相關的ICON 我點了之後可以把當前的英文資訊翻譯包含標題 內文等，預設我是A1等級的英文能力，所以幫我按照A1等級能力添加20%的難易度的學習內容，英文盡量找對應等級且生活性的用語來產生，簡單說 假如一篇內容談到地球暖化對於人類的影響，既便內容生硬，也要標註出A1以上的單字，這樣我才能學習，也要將此篇改寫成兩個人的對話討論，讓我可以模擬應用練習使用
+
+我要多一個功能是，幫我列出的單字，我可以點選加入生字簿的功能，我就可以到那邊去練習，在練習簿這邊，也幫我多一個來源的跳顯示窗，讓我能快速地知道這單字從哪篇新聞文章過來的
+
+
+其次我會使用下面的翻譯來翻譯，請參考。
+
+from openai import OpenAI
+
+client = OpenAI(
+  base_url="https://openrouter.ai/api/v1",
+  api_key="<OPENROUTER_API_KEY>",
+)
+
+completion = client.chat.completions.create(
+  extra_headers={
+    "HTTP-Referer": "<YOUR_SITE_URL>", # Optional. Site URL for rankings on openrouter.ai.
+    "X-Title": "<YOUR_SITE_NAME>", # Optional. Site title for rankings on openrouter.ai.
+  },
+  model="openai/gpt-4o",
+  messages=[
+    {
+      "role": "user",
+      "content": "What is the meaning of life?"
+    }
+  ]
+)
+
+print(completion.choices[0].message.content)
+
+
+
