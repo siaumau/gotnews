@@ -81,23 +81,28 @@ def delete_article(article_id):
 @app.route('/api/articles/<int:article_id>/translation-check', methods=['GET'])
 def check_translation(article_id):
     try:
+        print(f"[CHECK] Checking translation for article ID: {article_id}")
         # 檢查是否已有翻譯
         existing_translation = db.get_translation(article_id)
         if existing_translation:
+            print(f"[FOUND] Found existing translation for article {article_id}")
             return jsonify({
                 'exists': True,
                 'data': existing_translation
             })
         else:
+            print(f"[NEW] No translation found for article {article_id}")
             return jsonify({
                 'exists': False
             })
     except Exception as e:
+        print(f"[ERROR] Error checking translation for article {article_id}: {e}")
         return jsonify({'exists': False, 'message': str(e)})
 
 @app.route('/api/articles/<int:article_id>/translate', methods=['POST'])
 def translate_article(article_id):
     try:
+        print(f"[START] Starting translation for article ID: {article_id}")
         data = request.get_json() or {}
         openrouter_api_key = data.get('openrouter_api_key')
         
@@ -110,6 +115,7 @@ def translate_article(article_id):
         # 再次檢查是否已有翻譯（避免重複翻譯）
         existing_translation = db.get_translation(article_id)
         if existing_translation:
+            print(f"[CACHED] Using cached translation for article {article_id}")
             return jsonify({
                 'success': True,
                 'data': existing_translation
@@ -118,20 +124,25 @@ def translate_article(article_id):
         # 獲取原文章
         article = db.get_article_by_id(article_id)
         if not article:
+            print(f"[ERROR] Article {article_id} not found")
             return jsonify({'success': False, 'message': 'Article not found'}), 404
+        
+        print(f"[TRANSLATE] Translating article {article_id}: {article.get('title', 'No title')[:50]}...")
         
         # 使用前端提供的API金鑰創建新的translator
         temp_translator = EnglishLearningTranslator(openrouter_api_key)
         translation_data = temp_translator.translate_article_for_learning(article)
         
         # 儲存翻譯結果
-        db.save_translation(article_id, translation_data)
+        save_success = db.save_translation(article_id, translation_data)
+        print(f"[SAVE] Translation saved for article {article_id}: {save_success}")
         
         return jsonify({
             'success': True,
             'data': translation_data
         })
     except Exception as e:
+        print(f"[ERROR] Translation error for article {article_id}: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/vocabulary', methods=['GET'])

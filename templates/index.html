@@ -250,6 +250,18 @@
             border-radius: 5px;
             cursor: pointer;
             font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .add-vocab-btn:disabled {
+            background: #ccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .add-vocab-btn.added {
+            background: #666;
+            color: white;
         }
 
         .dialog-section {
@@ -798,15 +810,22 @@
             modalLoading.style.display = 'block';
             modalLoading.textContent = '檢查翻譯快取...';
             
+            console.log('🔍 Opening learning modal for article:', articleId);
+            
             try {
                 // 先檢查是否已經翻譯過
                 const checkResponse = await fetch(`/api/articles/${articleId}/translation-check`);
                 const checkResult = await checkResponse.json();
                 
+                console.log('✅ Translation check result:', checkResult);
+                
                 if (checkResult.exists) {
                     // 如果已經翻譯過，直接顯示快取的翻譯
+                    console.log('📋 Using cached translation for article:', articleId);
                     displayLearningContent(checkResult.data, articleId);
                     return;
+                } else {
+                    console.log('🆕 No cached translation found for article:', articleId);
                 }
                 
                 // 如果沒有翻譯過，檢查API金鑰
@@ -826,6 +845,8 @@
                 
                 // 開始翻譯
                 modalLoading.textContent = '翻譯中，請稍候...';
+                console.log('🔄 Starting translation for article:', articleId);
+                
                 const response = await fetch(`/api/articles/${articleId}/translate`, {
                     method: 'POST',
                     headers: {
@@ -837,9 +858,13 @@
                 });
                 const result = await response.json();
                 
+                console.log('📝 Translation result:', result);
+                
                 if (result.success) {
+                    console.log('✅ Translation successful for article:', articleId);
                     displayLearningContent(result.data, articleId);
                 } else {
+                    console.log('❌ Translation failed for article:', articleId, result.message);
                     modalContent.innerHTML = `
                         <div style="text-align: center; color: red; padding: 20px;">
                             翻譯失敗：${result.message}
@@ -909,7 +934,7 @@
                     
                     <h3>📚 重點單字</h3>
                     <div class="vocabulary-list">
-                        ${(data.vocabulary || []).map(vocab => `
+                        ${(data.vocabulary || []).map((vocab, index) => `
                             <div class="vocabulary-item">
                                 <div>
                                     <span class="vocabulary-word">${vocab.word}</span>
@@ -917,7 +942,7 @@
                                 </div>
                                 <div>
                                     <span class="vocabulary-level">${vocab.level}</span>
-                                    <button class="add-vocab-btn" onclick="addToVocabulary('${vocab.word}', '${vocab.meaning}', '${vocab.level}', ${articleId})">
+                                    <button id="vocab-btn-${articleId}-${index}" class="add-vocab-btn" onclick="addToVocabulary('${vocab.word}', '${vocab.meaning}', '${vocab.level}', ${articleId}, ${index})">
                                         加入生字簿
                                     </button>
                                 </div>
@@ -941,7 +966,16 @@
             document.getElementById('learningModal').style.display = 'none';
         }
 
-        async function addToVocabulary(word, meaning, level, articleId) {
+        async function addToVocabulary(word, meaning, level, articleId, index) {
+            const btnId = `vocab-btn-${articleId}-${index}`;
+            const button = document.getElementById(btnId);
+            
+            if (!button) return;
+            
+            // 禁用按鈕，防止重複點擊
+            button.disabled = true;
+            button.textContent = '加入中...';
+            
             try {
                 const response = await fetch('/api/vocabulary', {
                     method: 'POST',
@@ -960,11 +994,20 @@
                 const data = await response.json();
                 if (data.success) {
                     showMessage('單字已加入生字簿！');
+                    // 更新按鈕狀態為已加入
+                    button.textContent = '已加入';
+                    button.classList.add('added');
                 } else {
                     showMessage('加入失敗：' + data.message, true);
+                    // 恢復按鈕狀態
+                    button.disabled = false;
+                    button.textContent = '加入生字簿';
                 }
             } catch (error) {
                 showMessage('加入失敗：' + error.message, true);
+                // 恢復按鈕狀態
+                button.disabled = false;
+                button.textContent = '加入生字簿';
             }
         }
 
