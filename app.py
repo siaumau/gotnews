@@ -3,6 +3,7 @@ from database import NewsDatabase
 from news_fetcher import NewsFetcher
 from translator import EnglishLearningTranslator
 import os
+import sqlite3
 from datetime import datetime
 
 app = Flask(__name__)
@@ -77,6 +78,23 @@ def delete_article(article_id):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@app.route('/api/articles/<int:article_id>/translation-check', methods=['GET'])
+def check_translation(article_id):
+    try:
+        # 檢查是否已有翻譯
+        existing_translation = db.get_translation(article_id)
+        if existing_translation:
+            return jsonify({
+                'exists': True,
+                'data': existing_translation
+            })
+        else:
+            return jsonify({
+                'exists': False
+            })
+    except Exception as e:
+        return jsonify({'exists': False, 'message': str(e)})
+
 @app.route('/api/articles/<int:article_id>/translate', methods=['POST'])
 def translate_article(article_id):
     try:
@@ -89,7 +107,7 @@ def translate_article(article_id):
                 'message': 'OpenRouter API key is required'
             }), 400
         
-        # 檢查是否已有翻譯
+        # 再次檢查是否已有翻譯（避免重複翻譯）
         existing_translation = db.get_translation(article_id)
         if existing_translation:
             return jsonify({
@@ -157,5 +175,15 @@ def delete_vocabulary(vocab_id):
 def vocabulary_page():
     return render_template('vocabulary.html')
 
+@app.route('/api/clear-translations', methods=['POST'])
+def clear_translations():
+    try:
+        with sqlite3.connect(db.db_path) as conn:
+            conn.execute("DELETE FROM article_translations")
+            conn.commit()
+        return jsonify({'success': True, 'message': 'All translations cleared'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

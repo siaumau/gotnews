@@ -107,6 +107,7 @@ class NewsDatabase:
     
     def save_translation(self, article_id: int, translation_data: Dict) -> bool:
         try:
+            import json
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute("""
                     INSERT OR REPLACE INTO article_translations 
@@ -116,13 +117,14 @@ class NewsDatabase:
                     article_id,
                     translation_data.get('chinese_title'),
                     translation_data.get('chinese_content'),
-                    str(translation_data.get('vocabulary', [])),
-                    str(translation_data.get('dialog', {})),
+                    json.dumps(translation_data.get('vocabulary', []), ensure_ascii=False),
+                    json.dumps(translation_data.get('dialog', {}), ensure_ascii=False),
                     translation_data.get('simplified_english')
                 ))
                 conn.commit()
                 return True
-        except Exception:
+        except Exception as e:
+            print(f"Error saving translation: {e}")
             return False
     
     def get_translation(self, article_id: int) -> Optional[Dict]:
@@ -134,11 +136,14 @@ class NewsDatabase:
                 import json
                 result = dict(row)
                 try:
-                    result['vocabulary'] = eval(result['vocabulary'])
-                    result['dialog'] = eval(result['dialog'])
-                except:
+                    # 使用json.loads代替eval，更安全
+                    if isinstance(result['vocabulary'], str):
+                        result['vocabulary'] = json.loads(result['vocabulary'])
+                    if isinstance(result['dialog'], str):
+                        result['dialog'] = json.loads(result['dialog'])
+                except (json.JSONDecodeError, TypeError):
                     result['vocabulary'] = []
-                    result['dialog'] = {}
+                    result['dialog'] = {"person_a": [], "person_b": []}
                 return result
             return None
     

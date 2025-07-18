@@ -44,6 +44,9 @@
             cursor: pointer;
             transition: all 0.3s ease;
             font-weight: 600;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .btn-primary {
@@ -61,10 +64,25 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
         .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
+        }
+
+        .btn-icon {
+            display: inline-block;
+            margin-right: 6px;
+            font-size: 1.1em;
+        }
+
+        .btn-text {
+            display: inline-block;
         }
 
         .articles-grid {
@@ -291,8 +309,102 @@
             }
             
             .controls {
-                flex-direction: column;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                max-width: 300px;
+                margin: 0 auto;
+            }
+            
+            .controls .btn {
+                padding: 10px 16px;
+                font-size: 14px;
+                text-align: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+                margin-bottom: 5px;
+            }
+            
+            .header p {
+                font-size: 0.9rem;
+                margin-bottom: 10px;
+            }
+            
+            .controls {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 8px;
+                padding: 0 10px;
+            }
+            
+            .controls .btn {
+                flex: 1;
+                min-width: 120px;
+                max-width: 140px;
+                padding: 12px 8px;
+                font-size: 13px;
+                white-space: nowrap;
+                border-radius: 20px;
+                display: flex;
                 align-items: center;
+                justify-content: center;
+            }
+            
+            .controls .btn:nth-child(1),
+            .controls .btn:nth-child(2) {
+                flex-basis: calc(50% - 4px);
+            }
+            
+            .controls .btn:nth-child(3),
+            .controls .btn:nth-child(4),
+            .controls .btn:nth-child(5) {
+                flex-basis: calc(33.33% - 6px);
+                min-width: 100px;
+                padding: 10px 6px;
+                font-size: 12px;
+            }
+            
+            .controls .btn .btn-icon {
+                margin-right: 4px;
+                font-size: 1em;
+            }
+            
+            .controls .btn .btn-text {
+                font-size: 0.85em;
+            }
+        }
+        
+        @media (max-width: 360px) {
+            .controls .btn:nth-child(3),
+            .controls .btn:nth-child(4),
+            .controls .btn:nth-child(5) {
+                flex-basis: calc(50% - 4px);
+                margin-bottom: 8px;
+            }
+            
+            .controls .btn .btn-text {
+                display: none;
+            }
+            
+            .controls .btn .btn-icon {
+                margin-right: 0;
+                font-size: 1.2em;
+            }
+            
+            .controls .btn {
+                min-width: 50px;
+                padding: 12px;
+                border-radius: 50%;
+                aspect-ratio: 1;
             }
         }
     </style>
@@ -304,11 +416,30 @@
     </div>
 
     <div class="controls">
-        <button id="updateBtn" class="btn btn-primary">🔄 更新新聞</button>
-        <button id="showAllBtn" class="btn btn-secondary">📰 所有新聞</button>
-        <button id="showFavoritesBtn" class="btn btn-secondary">⭐ 我的收藏</button>
-        <button id="vocabularyBtn" class="btn btn-secondary" onclick="window.open('/vocabulary', '_blank')">📚 生字簿</button>
-        <button id="settingsBtn" class="btn btn-secondary" onclick="openSettingsModal()">⚙️ 設定</button>
+        <button id="updateBtn" class="btn btn-primary">
+            <span class="btn-icon">🔄</span>
+            <span class="btn-text">更新新聞</span>
+        </button>
+        <button id="showAllBtn" class="btn btn-secondary">
+            <span class="btn-icon">📰</span>
+            <span class="btn-text">所有新聞</span>
+        </button>
+        <button id="showFavoritesBtn" class="btn btn-secondary">
+            <span class="btn-icon">⭐</span>
+            <span class="btn-text">我的收藏</span>
+        </button>
+        <button id="vocabularyBtn" class="btn btn-secondary" onclick="window.open('/vocabulary', '_blank')">
+            <span class="btn-icon">📚</span>
+            <span class="btn-text">生字簿</span>
+        </button>
+        <button id="settingsBtn" class="btn btn-secondary" onclick="openSettingsModal()">
+            <span class="btn-icon">⚙️</span>
+            <span class="btn-text">設定</span>
+        </button>
+        <button id="clearTranslationsBtn" class="btn btn-secondary" onclick="clearTranslations()">
+            <span class="btn-icon">🗑️</span>
+            <span class="btn-text">清除翻譯</span>
+        </button>
     </div>
 
     <div id="message"></div>
@@ -514,8 +645,12 @@
 
         async function updateNews() {
             const updateBtn = document.getElementById('updateBtn');
+            const btnIcon = updateBtn.querySelector('.btn-icon');
+            const btnText = updateBtn.querySelector('.btn-text');
+            
             updateBtn.disabled = true;
-            updateBtn.textContent = '🔄 更新中...';
+            btnIcon.textContent = '🔄';
+            btnText.textContent = '更新中...';
             
             try {
                 const apiKeys = getApiKeys();
@@ -546,7 +681,8 @@
                 showMessage('更新失敗：' + error.message, true);
             } finally {
                 updateBtn.disabled = false;
-                updateBtn.textContent = '🔄 更新新聞';
+                btnIcon.textContent = '🔄';
+                btnText.textContent = '更新新聞';
             }
         }
 
@@ -660,8 +796,20 @@
             
             modal.style.display = 'block';
             modalLoading.style.display = 'block';
+            modalLoading.textContent = '檢查翻譯快取...';
             
             try {
+                // 先檢查是否已經翻譯過
+                const checkResponse = await fetch(`/api/articles/${articleId}/translation-check`);
+                const checkResult = await checkResponse.json();
+                
+                if (checkResult.exists) {
+                    // 如果已經翻譯過，直接顯示快取的翻譯
+                    displayLearningContent(checkResult.data, articleId);
+                    return;
+                }
+                
+                // 如果沒有翻譯過，檢查API金鑰
                 const apiKeys = getApiKeys();
                 if (!apiKeys.openRouterApiKey) {
                     modalContent.innerHTML = `
@@ -676,6 +824,8 @@
                     return;
                 }
                 
+                // 開始翻譯
+                modalLoading.textContent = '翻譯中，請稍候...';
                 const response = await fetch(`/api/articles/${articleId}/translate`, {
                     method: 'POST',
                     headers: {
@@ -708,6 +858,25 @@
         function displayLearningContent(data, articleId) {
             const modalContent = document.getElementById('modalContent');
             
+            // 調試信息
+            console.log('Article ID:', articleId);
+            console.log('Translation data:', data);
+            
+            // 檢查data是否有錯誤或者是原始JSON字符串
+            if (data.error) {
+                modalContent.innerHTML = `
+                    <div style="text-align: center; color: red; padding: 20px;">
+                        <h3>翻譯錯誤</h3>
+                        <p>${data.error}</p>
+                        <details>
+                            <summary>詳細信息</summary>
+                            <pre style="text-align: left; background: #f5f5f5; padding: 10px; border-radius: 5px; margin-top: 10px;">${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+                return;
+            }
+            
             let dialogHTML = '';
             if (data.dialog && data.dialog.person_a && data.dialog.person_b) {
                 const maxLength = Math.max(data.dialog.person_a.length, data.dialog.person_b.length);
@@ -721,13 +890,19 @@
                 }
             }
             
+            // 根據原文語言決定顯示內容
+            const isChinese = data.is_chinese_source || false;
+            const translationTitle = isChinese ? '📖 英文翻譯' : '📖 中文翻譯';
+            const dialogTitle = isChinese ? '💬 英文對話練習' : '💬 對話練習';
+            const simplifiedTitle = isChinese ? '📝 簡化英文' : '📝 簡化英文';
+            
             modalContent.innerHTML = `
                 <div>
-                    <h3>📖 中文翻譯</h3>
+                    <h3>${translationTitle}</h3>
                     <h4>${data.chinese_title || '無標題'}</h4>
                     <p>${data.chinese_content || '無內容'}</p>
                     
-                    <h3>💬 對話練習</h3>
+                    <h3>${dialogTitle}</h3>
                     <div class="dialog-section">
                         ${dialogHTML || '<p>無對話內容</p>'}
                     </div>
@@ -750,9 +925,13 @@
                         `).join('')}
                     </div>
                     
-                    <h3>📝 簡化英文</h3>
+                    <h3>${simplifiedTitle}</h3>
                     <div style="background: #f0f0f0; padding: 15px; border-radius: 10px;">
                         ${data.simplified_english || '無簡化版本'}
+                    </div>
+                    
+                    <div style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 5px; font-size: 0.9rem;">
+                        <strong>💡 語言檢測：</strong>${isChinese ? '中文 → 英文' : '英文 → 中文'}
                     </div>
                 </div>
             `;
@@ -786,6 +965,25 @@
                 }
             } catch (error) {
                 showMessage('加入失敗：' + error.message, true);
+            }
+        }
+
+        async function clearTranslations() {
+            if (!confirm('確定要清除所有翻譯快取嗎？這將刪除所有已翻譯的內容，下次點擊學習時需要重新翻譯。')) return;
+            
+            try {
+                const response = await fetch('/api/clear-translations', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('翻譯快取已清除');
+                } else {
+                    showMessage('清除失敗：' + data.message, true);
+                }
+            } catch (error) {
+                showMessage('清除失敗：' + error.message, true);
             }
         }
     </script>
