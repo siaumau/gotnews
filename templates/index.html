@@ -975,10 +975,12 @@
                 const maxLength = Math.max(data.dialog.person_a.length, data.dialog.person_b.length);
                 for (let i = 0; i < maxLength; i++) {
                     if (data.dialog.person_a[i]) {
-                        dialogHTML += `<div class="dialog-person dialog-person-a"><strong>A:</strong> ${data.dialog.person_a[i]} <span class="speak-btn" onclick="speakText('${data.dialog.person_a[i]}')">🔊</span></div>`;
+                        const safeTextA = data.dialog.person_a[i].replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+                        dialogHTML += `<div class="dialog-person dialog-person-a"><strong>A:</strong> ${data.dialog.person_a[i]} <span class="speak-btn" onclick="speakText('${safeTextA}')">🔊</span></div>`;
                     }
                     if (data.dialog.person_b[i]) {
-                        dialogHTML += `<div class="dialog-person dialog-person-b"><strong>B:</strong> ${data.dialog.person_b[i]} <span class="speak-btn" onclick="speakText('${data.dialog.person_b[i]}')">🔊</span></div>`;
+                        const safeTextB = data.dialog.person_b[i].replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+                        dialogHTML += `<div class="dialog-person dialog-person-b"><strong>B:</strong> ${data.dialog.person_b[i]} <span class="speak-btn" onclick="speakText('${safeTextB}')">🔊</span></div>`;
                     }
                 }
             }
@@ -989,31 +991,38 @@
             const dialogTitle = isChinese ? '💬 英文對話練習' : '💬 對話練習';
             const simplifiedTitle = isChinese ? '📝 簡化英文' : '📝 簡化英文';
 
+            const safeTitleText = (data.chinese_title || '').replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+            const safeContentText = (data.chinese_content || '').replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+            const safeSimplifiedText = (data.simplified_english || '').replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+            
             modalContent.innerHTML = `
                 <div>
-                    <h3>${translationTitle} <span class="speak-btn" onclick="speakText('${data.chinese_title}', '${isChinese ? 'en-US' : 'zh-TW'}')">🔊</span></h3>
+                    <h3>${translationTitle} <span class="speak-btn" onclick="speakText('${safeTitleText}', '${isChinese ? 'en-US' : 'zh-TW'}')">🔊</span></h3>
                     <h4>${data.chinese_title || '無標題'}</h4>
-                    <p>${data.chinese_content || '無內容'} <span class="speak-btn" onclick="speakText('${data.chinese_content}', '${isChinese ? 'en-US' : 'zh-TW'}')">🔊</span></p>
+                    <p>${data.chinese_content || '無內容'} <span class="speak-btn" onclick="speakText('${safeContentText}', '${isChinese ? 'en-US' : 'zh-TW'}')">🔊</span></p>
 
                     <h3>📚 重點單字</h3>
                     <div class="vocabulary-list">
-                        ${(data.vocabulary || []).map((vocab, index) => `
+                        ${(data.vocabulary || []).map((vocab, index) => {
+                            const safeWord = vocab.word.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+                            const safeMeaning = vocab.meaning.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+                            return `
                             <div class="vocabulary-item">
                                 <div>
-                                    <span class="vocabulary-word">${vocab.word} <span class="speak-btn" onclick="speakText('${vocab.word}')">🔊</span></span>
+                                    <span class="vocabulary-word">${vocab.word} <span class="speak-btn" onclick="speakText('${safeWord}')">🔊</span></span>
                                     <span class="vocabulary-meaning"> - ${vocab.meaning}</span>
                                 </div>
                                 <div>
                                     <span class="vocabulary-level">${vocab.level}</span>
-                                    <button id="vocab-btn-${articleId}-${index}" class="add-vocab-btn" onclick="addToVocabulary('${vocab.word}', '${vocab.meaning}', '${vocab.level}', ${articleId}, ${index})">
+                                    <button id="vocab-btn-${articleId}-${index}" class="add-vocab-btn" onclick="addToVocabulary('${safeWord}', '${safeMeaning}', '${vocab.level}', ${articleId}, ${index})">
                                         加入生字簿
                                     </button>
                                 </div>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                     </div>
 
-                    <h3>${simplifiedTitle} <span class="speak-btn" onclick="speakText('${data.simplified_english}')">🔊</span></h3>
+                    <h3>${simplifiedTitle} <span class="speak-btn" onclick="speakText('${safeSimplifiedText}')">🔊</span></h3>
                     <div style="background: #f0f0f0; padding: 15px; border-radius: 10px;">
                         ${data.simplified_english || '無簡化版本'}
                     </div>
