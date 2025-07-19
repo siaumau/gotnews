@@ -174,8 +174,50 @@
             color: #f44336;
         }
 
-        .learn-btn:hover {
-            color: #4CAF50;
+        .article-actions a {
+            color: #2196F3;
+            text-decoration: none;
+            margin-left: auto;
+            align-self: center; /* Vertically align */
+        }
+
+        .article-actions a:hover {
+            text-decoration: underline;
+        }
+
+        .speak-btn {
+            cursor: pointer;
+            margin-left: 8px;
+            font-size: 1rem; /* Adjust size */
+        }
+
+        .modal-content-article {
+            height: 90vh;
+            width: 90%;
+            max-width: 1200px;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: #f1f1f1;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .modal-header .close {
+            position: static;
+            float: none;
+            font-size: 2rem;
+        }
+
+        .modal-iframe {
+            flex-grow: 1;
+            border: none;
         }
 
         .modal {
@@ -342,11 +384,11 @@
                 gap: 20px;
                 padding: 0 10px;
             }
-            
+
             .header h1 {
                 font-size: 2rem;
             }
-            
+
             .controls {
                 justify-content: flex-end;
                 padding-right: 20px;
@@ -382,7 +424,7 @@
                 font-size: 14px;
             }
         }
-        
+
         @media (max-width: 480px) {
             .header h1 {
                 font-size: 1.8rem;
@@ -397,6 +439,19 @@
     </div>
 
     <div class="controls">
+        <div class="level-selector" style="margin-right: 15px;">
+            <label for="englishLevel" style="color: white; font-weight: 600; margin-right: 8px;">英文能力:</label>
+            <select id="englishLevel" style="padding: 8px 12px; border-radius: 15px; border: none; font-size: 14px; background: white; color: #333;">
+                <option value="A2">A2</option>
+                <option value="A3" selected>A3</option>
+                <option value="A4">A4</option>
+                <option value="A5">A5</option>
+                <option value="A6">A6</option>
+                <option value="B1">B1</option>
+                <option value="B2">B2</option>
+                <option value="C1">C1</option>
+            </select>
+        </div>
         <button id="hamburger-btn" class="hamburger-btn">
             <span></span>
             <span></span>
@@ -438,12 +493,22 @@
     <div id="learningModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h2>📚 英文學習 - A1 等級</h2>
+            <h2 id="learningModalTitle">📚 英文學習</h2>
             <div id="modalContent">
                 <div id="modalLoading" style="text-align: center; padding: 20px;">
                     翻譯中，請稍候...
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- 文章內容模態框 -->
+    <div id="articleModal" class="modal">
+        <div class="modal-content modal-content-article">
+            <div class="modal-header">
+                <span class="close" onclick="closeArticleModal()">&times;</span>
+            </div>
+            <iframe id="articleIframe" class="modal-iframe" src="about:blank"></iframe>
         </div>
     </div>
 
@@ -458,19 +523,19 @@
                     <input type="password" id="newsApiKey" placeholder="輸入你的 NewsAPI 金鑰" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px;">
                     <small style="color: #666;">用於抓取新聞資料，可從 <a href="https://newsapi.org" target="_blank">NewsAPI</a> 免費申請</small>
                 </div>
-                
+
                 <div style="margin-bottom: 20px;">
                     <label for="openRouterApiKey" style="display: block; margin-bottom: 5px; font-weight: bold;">OpenRouter API 金鑰：</label>
                     <input type="password" id="openRouterApiKey" placeholder="輸入你的 OpenRouter API 金鑰" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px;">
                     <small style="color: #666;">用於英文翻譯功能，可從 <a href="https://openrouter.ai" target="_blank">OpenRouter</a> 申請</small>
                 </div>
-                
+
                 <div style="display: flex; gap: 10px; justify-content: flex-end;">
                     <button onclick="saveApiKeys()" class="btn btn-primary">💾 儲存</button>
                     <button onclick="clearApiKeys()" class="btn btn-secondary">🗑️ 清除</button>
                     <button onclick="closeSettingsModal()" class="btn btn-secondary">❌ 取消</button>
                 </div>
-                
+
                 <div style="margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 10px;">
                     <h4>📋 API 狀態</h4>
                     <p id="newsApiStatus">NewsAPI：<span id="newsApiStatusText">未設定</span></p>
@@ -488,12 +553,12 @@
             <div style="margin: 20px 0;">
                 <label for="firstNewsApiKey" style="display: block; margin-bottom: 5px; font-weight: bold;">NewsAPI 金鑰（必填）：</label>
                 <input type="password" id="firstNewsApiKey" placeholder="輸入你的 NewsAPI 金鑰" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px;">
-                
+
                 <label for="firstOpenRouterApiKey" style="display: block; margin-bottom: 5px; font-weight: bold;">OpenRouter API 金鑰（選填）：</label>
                 <input type="password" id="firstOpenRouterApiKey" placeholder="輸入你的 OpenRouter API 金鑰（用於英文學習）" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 15px;">
-                
+
                 <button onclick="saveFirstSetup()" class="btn btn-primary" style="width: 100%;">開始使用</button>
-                
+
                 <div style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 5px; font-size: 0.9rem;">
                     <p><strong>💡 提示：</strong></p>
                     <p>• NewsAPI 金鑰用於抓取新聞資料</p>
@@ -510,24 +575,27 @@
         document.addEventListener('DOMContentLoaded', function() {
             checkApiKeys();
             loadArticles();
-            
+
             document.getElementById('updateBtn').addEventListener('click', updateNews);
             document.getElementById('showAllBtn').addEventListener('click', () => showArticles('all'));
             document.getElementById('showFavoritesBtn').addEventListener('click', () => showArticles('favorites'));
-            
+
             // Hamburger Menu
             document.getElementById('hamburger-btn').addEventListener('click', function() {
                 document.getElementById('nav-links').classList.toggle('active');
             });
 
             // 學習模態框事件
-            document.querySelector('.close').addEventListener('click', closeLearningModal);
+            document.querySelector('#learningModal .close').addEventListener('click', closeLearningModal);
             window.addEventListener('click', function(event) {
                 if (event.target == document.getElementById('learningModal')) {
                     closeLearningModal();
                 }
                 if (event.target == document.getElementById('settingsModal')) {
                     closeSettingsModal();
+                }
+                if (event.target == document.getElementById('articleModal')) {
+                    closeArticleModal();
                 }
             });
         });
@@ -537,7 +605,7 @@
             messageDiv.textContent = text;
             messageDiv.className = isError ? 'message error' : 'message';
             messageDiv.style.display = 'block';
-            
+
             setTimeout(() => {
                 messageDiv.style.display = 'none';
             }, 3000);
@@ -551,18 +619,18 @@
         function checkApiKeys() {
             const newsApiKey = localStorage.getItem('newsApiKey');
             const openRouterApiKey = localStorage.getItem('openRouterApiKey');
-            
+
             if (!newsApiKey) {
                 document.getElementById('firstSetupModal').style.display = 'block';
             }
-            
+
             updateApiStatus();
         }
 
         function updateApiStatus() {
             const newsApiKey = localStorage.getItem('newsApiKey');
             const openRouterApiKey = localStorage.getItem('openRouterApiKey');
-            
+
             document.getElementById('newsApiStatusText').textContent = newsApiKey ? '✅ 已設定' : '❌ 未設定';
             document.getElementById('openRouterApiStatusText').textContent = openRouterApiKey ? '✅ 已設定' : '❌ 未設定';
         }
@@ -570,10 +638,10 @@
         function openSettingsModal() {
             const newsApiKey = localStorage.getItem('newsApiKey');
             const openRouterApiKey = localStorage.getItem('openRouterApiKey');
-            
+
             document.getElementById('newsApiKey').value = newsApiKey || '';
             document.getElementById('openRouterApiKey').value = openRouterApiKey || '';
-            
+
             updateApiStatus();
             document.getElementById('settingsModal').style.display = 'block';
         }
@@ -585,14 +653,14 @@
         function saveApiKeys() {
             const newsApiKey = document.getElementById('newsApiKey').value;
             const openRouterApiKey = document.getElementById('openRouterApiKey').value;
-            
+
             if (newsApiKey) {
                 localStorage.setItem('newsApiKey', newsApiKey);
             }
             if (openRouterApiKey) {
                 localStorage.setItem('openRouterApiKey', openRouterApiKey);
             }
-            
+
             updateApiStatus();
             showMessage('API 金鑰已儲存');
             closeSettingsModal();
@@ -602,10 +670,10 @@
             if (confirm('確定要清除所有 API 金鑰嗎？')) {
                 localStorage.removeItem('newsApiKey');
                 localStorage.removeItem('openRouterApiKey');
-                
+
                 document.getElementById('newsApiKey').value = '';
                 document.getElementById('openRouterApiKey').value = '';
-                
+
                 updateApiStatus();
                 showMessage('API 金鑰已清除');
             }
@@ -614,17 +682,17 @@
         function saveFirstSetup() {
             const newsApiKey = document.getElementById('firstNewsApiKey').value;
             const openRouterApiKey = document.getElementById('firstOpenRouterApiKey').value;
-            
+
             if (!newsApiKey) {
                 alert('請輸入 NewsAPI 金鑰');
                 return;
             }
-            
+
             localStorage.setItem('newsApiKey', newsApiKey);
             if (openRouterApiKey) {
                 localStorage.setItem('openRouterApiKey', openRouterApiKey);
             }
-            
+
             document.getElementById('firstSetupModal').style.display = 'none';
             showMessage('設定完成！歡迎使用 AI 新聞學習系統');
         }
@@ -640,11 +708,11 @@
             const updateBtn = document.getElementById('updateBtn');
             const btnIcon = updateBtn.querySelector('.btn-icon');
             const btnText = updateBtn.querySelector('.btn-text');
-            
+
             updateBtn.disabled = true;
             btnIcon.textContent = '🔄';
             btnText.textContent = '更新中...';
-            
+
             try {
                 const apiKeys = getApiKeys();
                 if (!apiKeys.newsApiKey) {
@@ -652,7 +720,7 @@
                     openSettingsModal();
                     return;
                 }
-                
+
                 const response = await fetch('/api/update', {
                     method: 'POST',
                     headers: {
@@ -663,7 +731,7 @@
                     })
                 });
                 const data = await response.json();
-                
+
                 if (data.success) {
                     showMessage(`成功更新！獲取 ${data.total_fetched} 篇文章，新增 ${data.saved_count} 篇`);
                     loadArticles();
@@ -681,12 +749,12 @@
 
         async function loadArticles() {
             showLoading(true);
-            
+
             try {
                 const url = currentView === 'favorites' ? '/api/articles?favorites=true' : '/api/articles';
                 const response = await fetch(url);
                 const articles = await response.json();
-                
+
                 renderArticles(articles);
             } catch (error) {
                 showMessage('載入文章失敗：' + error.message, true);
@@ -697,27 +765,32 @@
 
         function showArticles(view) {
             currentView = view;
-            
+
             document.getElementById('showAllBtn').className = view === 'all' ? 'btn btn-primary' : 'btn btn-secondary';
             document.getElementById('showFavoritesBtn').className = view === 'favorites' ? 'btn btn-primary' : 'btn btn-secondary';
-            
+
             loadArticles();
         }
 
         function renderArticles(articles) {
             const grid = document.getElementById('articlesGrid');
-            
+            const placeholderSvg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='24px' fill='%23aaa' dominant-baseline='middle' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E`;
+
+            grid.innerHTML = ''; // Explicitly clear the grid
+
             if (articles.length === 0) {
                 grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: white; font-size: 1.2rem;">沒有找到文章</div>';
                 return;
             }
-            
-            grid.innerHTML = articles.map(article => `
-                <div class="article-card">
-                    <img src="${article.urlToImage || '/static/placeholder.jpg'}" 
-                         alt="${article.title}" 
+
+            articles.forEach(article => {
+                const articleCard = document.createElement('div');
+                articleCard.className = 'article-card';
+                articleCard.innerHTML = `
+                    <img src="${article.urlToImage || placeholderSvg}"
+                         alt="${article.title}"
                          class="article-image"
-                         onerror="this.src='/static/placeholder.jpg'">
+                         onerror="this.onerror=null;this.src='${placeholderSvg}'">
                     <div class="article-content">
                         <h3 class="article-title">${article.title}</h3>
                         <div class="article-meta">
@@ -726,7 +799,7 @@
                         </div>
                         <p class="article-description">${article.description || '無描述'}</p>
                         <div class="article-actions">
-                            <button class="action-btn favorite-btn ${article.is_favorite ? 'active' : ''}" 
+                            <button class="action-btn favorite-btn ${article.is_favorite ? 'active' : ''}"
                                     onclick="toggleFavorite(${article.id})">
                                 ⭐
                             </button>
@@ -736,13 +809,14 @@
                             <button class="action-btn delete-btn" onclick="deleteArticle(${article.id})">
                                 🗑️
                             </button>
-                            <a href="${article.url}" target="_blank" style="color: #2196F3; text-decoration: none; margin-left: auto;">
+                            <a href="#" onclick="openArticleModal('${article.url}')" style="color: #2196F3; text-decoration: none; margin-left: auto;">
                                 閱讀原文 →
                             </a>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+                grid.appendChild(articleCard);
+            });
         }
 
         async function toggleFavorite(articleId) {
@@ -751,7 +825,7 @@
                     method: 'POST'
                 });
                 const data = await response.json();
-                
+
                 if (data.success) {
                     loadArticles();
                 } else {
@@ -764,13 +838,13 @@
 
         async function deleteArticle(articleId) {
             if (!confirm('確定要刪除這篇文章嗎？')) return;
-            
+
             try {
                 const response = await fetch(`/api/articles/${articleId}`, {
                     method: 'DELETE'
                 });
                 const data = await response.json();
-                
+
                 if (data.success) {
                     showMessage('文章已刪除');
                     loadArticles();
@@ -785,21 +859,23 @@
         async function openLearningModal(articleId) {
             const modal = document.getElementById('learningModal');
             const modalContent = document.getElementById('modalContent');
-            
+            const level = document.getElementById('englishLevel').value;
+            document.getElementById('learningModalTitle').textContent = `📚 英文學習 - ${level} 等級`;
+
             // 每次打開時都重置內容為載入中狀態
             modalContent.innerHTML = '<div id="modalLoading" style="text-align: center; padding: 20px;">檢查翻譯快取...</div>';
-            
+
             modal.style.display = 'block';
-            
-            console.log('🔍 Opening learning modal for article:', articleId);
-            
+
+            console.log(`🔍 Opening learning modal for article: ${articleId} at level ${level}`);
+
             try {
                 // 先檢查是否已經翻譯過
                 const checkResponse = await fetch(`/api/articles/${articleId}/translation-check`);
                 const checkResult = await checkResponse.json();
-                
+
                 console.log('✅ Translation check result:', checkResult);
-                
+
                 if (checkResult.exists) {
                     // 如果已經翻譯過，直接顯示快取的翻譯
                     console.log('📋 Using cached translation for article:', articleId);
@@ -808,7 +884,7 @@
                 } else {
                     console.log('🆕 No cached translation found for article:', articleId);
                 }
-                
+
                 // 如果沒有翻譯過，檢查API金鑰
                 const apiKeys = getApiKeys();
                 if (!apiKeys.openRouterApiKey) {
@@ -823,24 +899,25 @@
                     `;
                     return;
                 }
-                
+
                 // 開始翻譯
                 document.getElementById('modalLoading').textContent = '翻譯中，請稍候...';
-                console.log('🔄 Starting translation for article:', articleId);
-                
+                console.log(`🔄 Starting translation for article: ${articleId} at level ${level}`);
+
                 const response = await fetch(`/api/articles/${articleId}/translate`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        openrouter_api_key: apiKeys.openRouterApiKey
+                        openrouter_api_key: apiKeys.openRouterApiKey,
+                        level: level
                     })
                 });
                 const result = await response.json();
-                
+
                 console.log('📝 Translation result:', result);
-                
+
                 if (result.success) {
                     console.log('✅ Translation successful for article:', articleId);
                     displayLearningContent(result.data, articleId);
@@ -861,13 +938,23 @@
             }
         }
 
+        function speakText(text, lang = 'en-US') {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = lang;
+                window.speechSynthesis.speak(utterance);
+            } else {
+                showMessage('您的瀏覽器不支援語音合成功能', true);
+            }
+        }
+
         function displayLearningContent(data, articleId) {
             const modalContent = document.getElementById('modalContent');
-            
+
             // 調試信息
             console.log('Article ID:', articleId);
             console.log('Translation data:', data);
-            
+
             // 檢查data是否有錯誤或者是原始JSON字符串
             if (data.error) {
                 modalContent.innerHTML = `
@@ -882,43 +969,38 @@
                 `;
                 return;
             }
-            
+
             let dialogHTML = '';
             if (data.dialog && data.dialog.person_a && data.dialog.person_b) {
                 const maxLength = Math.max(data.dialog.person_a.length, data.dialog.person_b.length);
                 for (let i = 0; i < maxLength; i++) {
                     if (data.dialog.person_a[i]) {
-                        dialogHTML += `<div class="dialog-person dialog-person-a"><strong>A:</strong> ${data.dialog.person_a[i]}</div>`;
+                        dialogHTML += `<div class="dialog-person dialog-person-a"><strong>A:</strong> ${data.dialog.person_a[i]} <span class="speak-btn" onclick="speakText('${data.dialog.person_a[i]}')">🔊</span></div>`;
                     }
                     if (data.dialog.person_b[i]) {
-                        dialogHTML += `<div class="dialog-person dialog-person-b"><strong>B:</strong> ${data.dialog.person_b[i]}</div>`;
+                        dialogHTML += `<div class="dialog-person dialog-person-b"><strong>B:</strong> ${data.dialog.person_b[i]} <span class="speak-btn" onclick="speakText('${data.dialog.person_b[i]}')">🔊</span></div>`;
                     }
                 }
             }
-            
+
             // 根據原文語言決定顯示內容
             const isChinese = data.is_chinese_source || false;
             const translationTitle = isChinese ? '📖 英文翻譯' : '📖 中文翻譯';
             const dialogTitle = isChinese ? '💬 英文對話練習' : '💬 對話練習';
             const simplifiedTitle = isChinese ? '📝 簡化英文' : '📝 簡化英文';
-            
+
             modalContent.innerHTML = `
                 <div>
-                    <h3>${translationTitle}</h3>
+                    <h3>${translationTitle} <span class="speak-btn" onclick="speakText('${data.chinese_title}', '${isChinese ? 'en-US' : 'zh-TW'}')">🔊</span></h3>
                     <h4>${data.chinese_title || '無標題'}</h4>
-                    <p>${data.chinese_content || '無內容'}</p>
-                    
-                    <h3>${dialogTitle}</h3>
-                    <div class="dialog-section">
-                        ${dialogHTML || '<p>無對話內容</p>'}
-                    </div>
-                    
+                    <p>${data.chinese_content || '無內容'} <span class="speak-btn" onclick="speakText('${data.chinese_content}', '${isChinese ? 'en-US' : 'zh-TW'}')">🔊</span></p>
+
                     <h3>📚 重點單字</h3>
                     <div class="vocabulary-list">
                         ${(data.vocabulary || []).map((vocab, index) => `
                             <div class="vocabulary-item">
                                 <div>
-                                    <span class="vocabulary-word">${vocab.word}</span>
+                                    <span class="vocabulary-word">${vocab.word} <span class="speak-btn" onclick="speakText('${vocab.word}')">🔊</span></span>
                                     <span class="vocabulary-meaning"> - ${vocab.meaning}</span>
                                 </div>
                                 <div>
@@ -930,17 +1012,27 @@
                             </div>
                         `).join('')}
                     </div>
-                    
-                    <h3>${simplifiedTitle}</h3>
+
+                    <h3>${simplifiedTitle} <span class="speak-btn" onclick="speakText('${data.simplified_english}')">🔊</span></h3>
                     <div style="background: #f0f0f0; padding: 15px; border-radius: 10px;">
                         ${data.simplified_english || '無簡化版本'}
                     </div>
-                    
+
                     <div style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 5px; font-size: 0.9rem;">
                         <strong>💡 語言檢測：</strong>${isChinese ? '中文 → 英文' : '英文 → 中文'}
                     </div>
                 </div>
             `;
+        }
+
+        function openArticleModal(url) {
+            document.getElementById('articleIframe').src = url;
+            document.getElementById('articleModal').style.display = 'block';
+        }
+
+        function closeArticleModal() {
+            document.getElementById('articleIframe').src = 'about:blank';
+            document.getElementById('articleModal').style.display = 'none';
         }
 
         function closeLearningModal() {
@@ -950,13 +1042,13 @@
         async function addToVocabulary(word, meaning, level, articleId, index) {
             const btnId = `vocab-btn-${articleId}-${index}`;
             const button = document.getElementById(btnId);
-            
+
             if (!button) return;
-            
+
             // 禁用按鈕，防止重複點擊
             button.disabled = true;
             button.textContent = '加入中...';
-            
+
             try {
                 const response = await fetch('/api/vocabulary', {
                     method: 'POST',
@@ -971,7 +1063,7 @@
                         source_article_title: '新聞文章'
                     })
                 });
-                
+
                 const data = await response.json();
                 if (data.success) {
                     showMessage('單字已加入生字簿！');
@@ -994,13 +1086,13 @@
 
         async function clearTranslations() {
             if (!confirm('確定要清除所有翻譯快取嗎？這將刪除所有已翻譯的內容，下次點擊學習時需要重新翻譯。')) return;
-            
+
             try {
                 const response = await fetch('/api/clear-translations', {
                     method: 'POST'
                 });
                 const data = await response.json();
-                
+
                 if (data.success) {
                     showMessage('翻譯快取已清除');
                 } else {

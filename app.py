@@ -105,6 +105,7 @@ def translate_article(article_id):
         print(f"[START] Starting translation for article ID: {article_id}")
         data = request.get_json() or {}
         openrouter_api_key = data.get('openrouter_api_key')
+        level = data.get('level', 'A3')  # Get level from request, default to A3
         
         if not openrouter_api_key:
             return jsonify({
@@ -127,11 +128,11 @@ def translate_article(article_id):
             print(f"[ERROR] Article {article_id} not found")
             return jsonify({'success': False, 'message': 'Article not found'}), 404
         
-        print(f"[TRANSLATE] Translating article {article_id}: {article.get('title', 'No title')[:50]}...")
+        print(f"[TRANSLATE] Translating article {article_id} for level {level}: {article.get('title', 'No title')[:50]}...")
         
         # 使用前端提供的API金鑰創建新的translator
         temp_translator = EnglishLearningTranslator(openrouter_api_key)
-        translation_data = temp_translator.translate_article_for_learning(article)
+        translation_data = temp_translator.translate_article_for_learning(article, level)
         
         # 儲存翻譯結果
         save_success = db.save_translation(article_id, translation_data)
@@ -181,6 +182,45 @@ def delete_vocabulary(vocab_id):
             return jsonify({'success': False, 'message': 'Vocabulary not found'}), 404
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/vocabulary/practice', methods=['POST'])
+def practice_vocabulary():
+    try:
+        data = request.json
+        word = data.get('word')
+        meaning = data.get('meaning')
+        openrouter_api_key = request.headers.get('X-OpenRouter-Api-Key')
+
+        if not openrouter_api_key:
+            # Try to get from local storage if not in headers
+            # This is a fallback, best to pass from frontend
+            # For security reasons, this is not recommended
+            pass
+
+        if not word or not meaning:
+            return jsonify({'success': False, 'message': 'Word and meaning are required'}), 400
+
+        translator = EnglishLearningTranslator(api_key=openrouter_api_key)
+        practice_data = translator.generate_sentence_practice(word, meaning)
+
+        if practice_data.get('error'):
+            return jsonify({'success': False, 'message': practice_data.get('error')})
+
+        # Generate HTML for the practice dialogs
+        html = ""
+        for practice in practice_data.get('practice_dialogs', []):
+            html += f"<h4>{practice.get('scenario')}</h4>"
+            for line in practice.get('dialog', []):
+                # Escape quotes to prevent JavaScript syntax errors
+                safe_line = line.get("line", "").replace('"', '&quot;').replace("'", "&#39;")
+                html += f'<p><strong>{line.get("speaker")}:</strong> {line.get("line")} <span class="speak-btn" onclick="speakText(\'{safe_line}\')">🔊</span><br><small>{line.get("translation")}</small></p>'
+            html += "<hr>"
+
+        return jsonify({'success': True, 'html': html})
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 
 @app.route('/vocabulary')
 def vocabulary_page():

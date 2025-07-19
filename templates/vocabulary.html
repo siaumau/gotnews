@@ -162,6 +162,11 @@
             transform: scale(1.05);
         }
 
+        .speak-btn {
+            cursor: pointer;
+            margin-left: 8px;
+        }
+
         .loading {
             text-align: center;
             color: white;
@@ -265,15 +270,28 @@
         </div>
     </div>
 
+    <!-- 句子練習模態框 -->
+    <div id="practiceModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>🗣️ 句子練習</h3>
+            <div id="practiceContent"></div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             loadVocabulary();
             
             // 模態框事件
-            document.querySelector('.close').addEventListener('click', closeSourceModal);
+            document.querySelector('#sourceModal .close').addEventListener('click', closeSourceModal);
+            document.querySelector('#practiceModal .close').addEventListener('click', closePracticeModal);
             window.addEventListener('click', function(event) {
                 if (event.target == document.getElementById('sourceModal')) {
                     closeSourceModal();
+                }
+                if (event.target == document.getElementById('practiceModal')) {
+                    closePracticeModal();
                 }
             });
         });
@@ -318,7 +336,7 @@
             
             grid.innerHTML = vocabulary.map(vocab => `
                 <div class="vocabulary-card">
-                    <div class="vocabulary-word">${vocab.word}</div>
+                    <div class="vocabulary-word">${vocab.word} <span class="speak-btn" onclick="speakText('${vocab.word}')">🔊</span></div>
                     <div class="vocabulary-meaning">${vocab.meaning}</div>
                     <div class="vocabulary-level">${vocab.level}</div>
                     <div class="vocabulary-source" onclick="showSourceArticle(${vocab.source_article_id}, '${vocab.source_article_title}')">
@@ -328,8 +346,8 @@
                         加入時間：${new Date(vocab.created_at).toLocaleDateString('zh-TW')}
                     </div>
                     <div class="vocabulary-actions">
-                        <button class="practice-btn" onclick="practiceWord('${vocab.word}', '${vocab.meaning}')">
-                            練習
+                        <button class="practice-btn" onclick="openSentencePracticeModal('${vocab.word}', '${vocab.meaning}')">
+                            句子練習
                         </button>
                         <button class="delete-btn" onclick="deleteVocabulary(${vocab.id})">
                             刪除
@@ -396,6 +414,61 @@
 
         function closeSourceModal() {
             document.getElementById('sourceModal').style.display = 'none';
+        }
+
+        function speakText(text, lang = 'en-US') {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = lang;
+                window.speechSynthesis.speak(utterance);
+            } else {
+                showMessage('您的瀏覽器不支援語音合成功能', true);
+            }
+        }
+
+        function getApiKeys() {
+            return {
+                newsApiKey: localStorage.getItem('newsApiKey'),
+                openRouterApiKey: localStorage.getItem('openRouterApiKey')
+            };
+        }
+
+        async function openSentencePracticeModal(word, meaning) {
+            const modal = document.getElementById('practiceModal');
+            const practiceContent = document.getElementById('practiceContent');
+            
+            practiceContent.innerHTML = '<div class="loading">正在產生句子練習...</div>';
+            modal.style.display = 'block';
+
+            const apiKeys = getApiKeys();
+            if (!apiKeys.openRouterApiKey) {
+                practiceContent.innerHTML = `<p style="color: orange;">請先在主頁設定 OpenRouter API 金鑰才能使用此功能。</p>`;
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/vocabulary/practice', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-OpenRouter-Api-Key': apiKeys.openRouterApiKey
+                    },
+                    body: JSON.stringify({ word, meaning })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    practiceContent.innerHTML = data.html;
+                } else {
+                    practiceContent.innerHTML = `<p style="color: red;">無法產生練習：${data.message}</p>`;
+                }
+            } catch (error) {
+                practiceContent.innerHTML = `<p style="color: red;">無法產生練習：${error.message}</p>`;
+            }
+        }
+
+        function closePracticeModal() {
+            document.getElementById('practiceModal').style.display = 'none';
         }
 
         function practiceWord(word, meaning) {
