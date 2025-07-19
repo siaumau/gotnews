@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+# 你的原始程式碼接著寫
+
+
 from flask import Flask, render_template, jsonify, request
 from database import NewsDatabase
 from news_fetcher import NewsFetcher
@@ -19,12 +25,12 @@ def index():
 @app.route('/api/articles')
 def get_articles():
     show_favorites = request.args.get('favorites', 'false').lower() == 'true'
-    
+
     if show_favorites:
         articles = db.get_favorite_articles()
     else:
         articles = db.get_all_articles()
-    
+
     return jsonify(articles)
 
 @app.route('/api/update', methods=['POST'])
@@ -32,18 +38,18 @@ def update_news():
     try:
         data = request.get_json() or {}
         news_api_key = data.get('news_api_key')
-        
+
         if not news_api_key:
             return jsonify({
                 'success': False,
                 'message': 'NewsAPI key is required'
             }), 400
-        
+
         # 使用前端提供的API金鑰創建新的fetcher
         temp_fetcher = NewsFetcher(news_api_key)
         articles = temp_fetcher.fetch_ai_news()
         saved_count = temp_fetcher.save_articles_to_db(db, articles)
-        
+
         return jsonify({
             'success': True,
             'message': f'Successfully fetched {len(articles)} articles, saved {saved_count} new articles',
@@ -106,13 +112,13 @@ def translate_article(article_id):
         data = request.get_json() or {}
         openrouter_api_key = data.get('openrouter_api_key')
         level = data.get('level', 'A3')  # Get level from request, default to A3
-        
+
         if not openrouter_api_key:
             return jsonify({
                 'success': False,
                 'message': 'OpenRouter API key is required'
             }), 400
-        
+
         # 再次檢查是否已有翻譯（避免重複翻譯）
         existing_translation = db.get_translation(article_id)
         if existing_translation:
@@ -121,23 +127,23 @@ def translate_article(article_id):
                 'success': True,
                 'data': existing_translation
             })
-        
+
         # 獲取原文章
         article = db.get_article_by_id(article_id)
         if not article:
             print(f"[ERROR] Article {article_id} not found")
             return jsonify({'success': False, 'message': 'Article not found'}), 404
-        
+
         print(f"[TRANSLATE] Translating article {article_id} for level {level}: {article.get('title', 'No title')[:50]}...")
-        
+
         # 使用前端提供的API金鑰創建新的translator
         temp_translator = EnglishLearningTranslator(openrouter_api_key)
         translation_data = temp_translator.translate_article_for_learning(article, level)
-        
+
         # 儲存翻譯結果
         save_success = db.save_translation(article_id, translation_data)
         print(f"[SAVE] Translation saved for article {article_id}: {save_success}")
-        
+
         return jsonify({
             'success': True,
             'data': translation_data
