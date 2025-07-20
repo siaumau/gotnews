@@ -38,6 +38,7 @@ def update_news():
     try:
         data = request.get_json() or {}
         news_api_key = data.get('news_api_key')
+        news_type = data.get('news_type', 'everything')
 
         if not news_api_key:
             return jsonify({
@@ -45,18 +46,46 @@ def update_news():
                 'message': 'NewsAPI key is required'
             }), 400
 
+        print(f"[INFO] News update request - Type: {news_type}")
+        print(f"[INFO] Request data: {dict(data)}")
+
         # 使用前端提供的API金鑰創建新的fetcher
         temp_fetcher = NewsFetcher(news_api_key)
-        articles = temp_fetcher.fetch_ai_news()
+        
+        # 根據新聞類型準備參數
+        fetch_params = {}
+        
+        if news_type == 'everything':
+            fetch_params = {
+                'query': data.get('query', 'AI'),
+                'from_date': data.get('from_date'),
+                'sort_by': data.get('sort_by', 'popularity')
+            }
+            print(f"[INFO] Everything API params: {fetch_params}")
+        elif news_type == 'top-headlines':
+            fetch_params = {
+                'country': data.get('country', 'us'),
+                'category': data.get('category', 'business'),
+                'from_date': data.get('from_date')  # 注意：Headlines API 不支援此參數
+            }
+            print(f"[INFO] Headlines API params: {fetch_params}")
+        
+        # 抓取新聞
+        articles = temp_fetcher.fetch_news(news_type, **fetch_params)
         saved_count = temp_fetcher.save_articles_to_db(db, articles)
+
+        print(f"[SUCCESS] Fetched {len(articles)} articles, saved {saved_count} new articles")
 
         return jsonify({
             'success': True,
             'message': f'Successfully fetched {len(articles)} articles, saved {saved_count} new articles',
             'saved_count': saved_count,
-            'total_fetched': len(articles)
+            'total_fetched': len(articles),
+            'news_type': news_type,
+            'params': fetch_params
         })
     except Exception as e:
+        print(f"[ERROR] Update news error: {str(e)}")
         return jsonify({
             'success': False,
             'message': f'Error updating news: {str(e)}'
@@ -156,6 +185,10 @@ def translate_article(article_id):
 def get_vocabulary():
     try:
         vocabulary_list = db.get_vocabulary_list()
+        # 為每個單字檢查是否有句子練習
+        for vocab in vocabulary_list:
+            practice = db.get_sentence_practice(vocab['word'])
+            vocab['has_practice'] = practice is not None
         return jsonify(vocabulary_list)
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -232,6 +265,10 @@ def practice_vocabulary():
 def vocabulary_page():
     return render_template('vocabulary.html')
 
+@app.route('/sentence-practice')
+def sentence_practice_page():
+    return render_template('sentence_practice.html')
+
 @app.route('/api/clear-translations', methods=['POST'])
 def clear_translations():
     try:
@@ -295,6 +332,17 @@ def get_all_sentence_practices():
     try:
         practices = db.get_all_sentence_practices()
         return jsonify({'success': True, 'data': practices})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/sentence-practice/<int:practice_id>', methods=['DELETE'])
+def delete_sentence_practice(practice_id):
+    try:
+        success = db.delete_sentence_practice(practice_id)
+        if success:
+            return jsonify({'success': True, 'message': 'Sentence practice deleted'})
+        else:
+            return jsonify({'success': False, 'message': 'Practice not found'}), 404
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 

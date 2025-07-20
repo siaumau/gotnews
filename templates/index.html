@@ -474,6 +474,10 @@
                 <span class="btn-icon">📚</span>
                 <span class="btn-text">生字簿</span>
             </button>
+            <button id="sentencePracticeBtn" class="btn btn-secondary" onclick="window.open('/sentence-practice', '_blank')">
+                <span class="btn-icon">💬</span>
+                <span class="btn-text">句子練習</span>
+            </button>
             <button id="settingsBtn" class="btn btn-secondary" onclick="openSettingsModal()">
                 <span class="btn-icon">⚙️</span>
                 <span class="btn-text">設定</span>
@@ -545,6 +549,88 @@
         </div>
     </div>
 
+    <!-- 新聞更新配置模態框 -->
+    <div id="newsUpdateModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeNewsUpdateModal()">&times;</span>
+            <h2>📰 新聞更新配置</h2>
+            <div style="margin: 20px 0;">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">新聞類型：</label>
+                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                        <label style="display: flex; align-items: center; gap: 5px;">
+                            <input type="radio" name="newsType" value="everything" checked onchange="updateNewsForm()">
+                            <span>🔍 搜尋新聞 (Everything)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 5px;">
+                            <input type="radio" name="newsType" value="top-headlines" onchange="updateNewsForm()">
+                            <span>📈 頭條新聞 (Top Headlines)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Everything API 配置 -->
+                <div id="everythingConfig">
+                    <div style="margin-bottom: 15px;">
+                        <label for="searchQuery" style="display: block; margin-bottom: 5px; font-weight: bold;">搜尋關鍵字：</label>
+                        <input type="text" id="searchQuery" value="AI" placeholder="例如：AI, 人工智慧, 科技" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label for="sortBy" style="display: block; margin-bottom: 5px; font-weight: bold;">排序方式：</label>
+                        <select id="sortBy" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                            <option value="popularity">熱門程度</option>
+                            <option value="publishedAt">發布時間</option>
+                            <option value="relevancy">相關性</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Top Headlines API 配置 -->
+                <div id="headlinesConfig" style="display: none;">
+                    <div style="margin-bottom: 15px;">
+                        <label for="country" style="display: block; margin-bottom: 5px; font-weight: bold;">國家：</label>
+                        <select id="country" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                            <option value="us">美國 (US)</option>
+                            <option value="tw">台灣 (TW)</option>
+                            <option value="gb">英國 (GB)</option>
+                            <option value="jp">日本 (JP)</option>
+                            <option value="kr">南韓 (KR)</option>
+                            <option value="cn">中國 (CN)</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label for="category" style="display: block; margin-bottom: 5px; font-weight: bold;">類別：</label>
+                        <select id="category" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                            <option value="business">商業</option>
+                            <option value="technology">科技</option>
+                            <option value="science">科學</option>
+                            <option value="health">健康</option>
+                            <option value="entertainment">娛樂</option>
+                            <option value="sports">體育</option>
+                            <option value="general">一般</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label for="fromDate" style="display: block; margin-bottom: 5px; font-weight: bold;">開始日期：</label>
+                    <input type="date" id="fromDate" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                    <button onclick="startNewsUpdate()" class="btn btn-primary">🔄 開始更新</button>
+                    <button onclick="closeNewsUpdateModal()" class="btn btn-secondary">❌ 取消</button>
+                </div>
+
+                <div style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 5px; font-size: 0.9rem;">
+                    <p><strong>💡 說明：</strong></p>
+                    <p>• <strong>搜尋新聞</strong>：依關鍵字搜尋全球新聞，可自訂搜尋詞</p>
+                    <p>• <strong>頭條新聞</strong>：取得特定國家/類別的熱門頭條</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 初次設定模態框 -->
     <div id="firstSetupModal" class="modal" style="display: none;">
         <div class="modal-content">
@@ -576,7 +662,7 @@
             checkApiKeys();
             loadArticles();
 
-            document.getElementById('updateBtn').addEventListener('click', updateNews);
+            document.getElementById('updateBtn').addEventListener('click', openNewsUpdateModal);
             document.getElementById('showAllBtn').addEventListener('click', () => showArticles('all'));
             document.getElementById('showFavoritesBtn').addEventListener('click', () => showArticles('favorites'));
 
@@ -597,7 +683,15 @@
                 if (event.target == document.getElementById('articleModal')) {
                     closeArticleModal();
                 }
+                if (event.target == document.getElementById('newsUpdateModal')) {
+                    closeNewsUpdateModal();
+                }
             });
+
+            // 設定預設日期為昨天
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            document.getElementById('fromDate').value = yesterday.toISOString().split('T')[0];
         });
 
         function showMessage(text, isError = false) {
@@ -704,21 +798,58 @@
             };
         }
 
-        async function updateNews() {
-            const updateBtn = document.getElementById('updateBtn');
-            const btnIcon = updateBtn.querySelector('.btn-icon');
-            const btnText = updateBtn.querySelector('.btn-text');
+        function openNewsUpdateModal() {
+            const apiKeys = getApiKeys();
+            if (!apiKeys.newsApiKey) {
+                showMessage('請先設定 NewsAPI 金鑰', true);
+                openSettingsModal();
+                return;
+            }
+            document.getElementById('newsUpdateModal').style.display = 'block';
+        }
+
+        function closeNewsUpdateModal() {
+            document.getElementById('newsUpdateModal').style.display = 'none';
+        }
+
+        function updateNewsForm() {
+            const newsType = document.querySelector('input[name="newsType"]:checked').value;
+            const everythingConfig = document.getElementById('everythingConfig');
+            const headlinesConfig = document.getElementById('headlinesConfig');
+
+            if (newsType === 'everything') {
+                everythingConfig.style.display = 'block';
+                headlinesConfig.style.display = 'none';
+            } else {
+                everythingConfig.style.display = 'none';
+                headlinesConfig.style.display = 'block';
+            }
+        }
+
+        async function startNewsUpdate() {
+            const updateBtn = document.querySelector('button[onclick="startNewsUpdate()"]');
+            const originalText = updateBtn.innerHTML;
 
             updateBtn.disabled = true;
-            btnIcon.textContent = '🔄';
-            btnText.textContent = '更新中...';
+            updateBtn.innerHTML = '🔄 更新中...';
 
             try {
                 const apiKeys = getApiKeys();
-                if (!apiKeys.newsApiKey) {
-                    showMessage('請先設定 NewsAPI 金鑰', true);
-                    openSettingsModal();
-                    return;
+                const newsType = document.querySelector('input[name="newsType"]:checked').value;
+                const fromDate = document.getElementById('fromDate').value;
+
+                let requestData = {
+                    news_api_key: apiKeys.newsApiKey,
+                    news_type: newsType,
+                    from_date: fromDate
+                };
+
+                if (newsType === 'everything') {
+                    requestData.query = document.getElementById('searchQuery').value || 'AI';
+                    requestData.sort_by = document.getElementById('sortBy').value;
+                } else {
+                    requestData.country = document.getElementById('country').value;
+                    requestData.category = document.getElementById('category').value;
                 }
 
                 const response = await fetch('/api/update', {
@@ -726,15 +857,14 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        news_api_key: apiKeys.newsApiKey
-                    })
+                    body: JSON.stringify(requestData)
                 });
                 const data = await response.json();
 
                 if (data.success) {
                     showMessage(`成功更新！獲取 ${data.total_fetched} 篇文章，新增 ${data.saved_count} 篇`);
                     loadArticles();
+                    closeNewsUpdateModal();
                 } else {
                     showMessage(data.message, true);
                 }
@@ -742,8 +872,7 @@
                 showMessage('更新失敗：' + error.message, true);
             } finally {
                 updateBtn.disabled = false;
-                btnIcon.textContent = '🔄';
-                btnText.textContent = '更新新聞';
+                updateBtn.innerHTML = originalText;
             }
         }
 
@@ -948,6 +1077,18 @@
             }
         }
 
+        // 事件委託處理語音播放，避免字符轉義問題
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('speak-btn') || event.target.closest('.speak-btn')) {
+                const speakElement = event.target.classList.contains('speak-btn') ? event.target : event.target.closest('.speak-btn');
+                const text = speakElement.getAttribute('data-text');
+                const lang = speakElement.getAttribute('data-lang') || 'en-US';
+                if (text) {
+                    speakText(text, lang);
+                }
+            }
+        });
+
         function displayLearningContent(data, articleId) {
             const modalContent = document.getElementById('modalContent');
 
@@ -959,12 +1100,28 @@
             if (data.error) {
                 modalContent.innerHTML = `
                     <div style="text-align: center; color: red; padding: 20px;">
-                        <h3>翻譯錯誤</h3>
-                        <p>${data.error}</p>
-                        <details>
-                            <summary>詳細信息</summary>
-                            <pre style="text-align: left; background: #f5f5f5; padding: 10px; border-radius: 5px; margin-top: 10px;">${JSON.stringify(data, null, 2)}</pre>
+                        <h3>🚨 翻譯解析錯誤</h3>
+                        <p style="background: #ffebee; padding: 10px; border-radius: 5px; margin: 10px 0;">
+                            ${data.error}
+                        </p>
+                        <div style="text-align: left; margin-top: 15px;">
+                            <h4>可能的解決方案：</h4>
+                            <ul style="text-align: left; color: #666;">
+                                <li>🔄 重新嘗試翻譯</li>
+                                <li>🗑️ 清除翻譯快取後重試</li>
+                                <li>⚙️ 檢查 OpenRouter API 金鑰設定</li>
+                            </ul>
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <button onclick="clearTranslations(); closeLearningModal();" class="btn btn-secondary" style="margin-right: 10px;">清除快取</button>
+                            <button onclick="closeLearningModal();" class="btn btn-primary">關閉</button>
+                        </div>
+                        ${data.raw_response ? `
+                        <details style="margin-top: 15px;">
+                            <summary>原始回應 (調試用)</summary>
+                            <pre style="text-align: left; background: #f5f5f5; padding: 10px; border-radius: 5px; margin-top: 10px; font-size: 12px; max-height: 200px; overflow-y: auto;">${data.raw_response}</pre>
                         </details>
+                        ` : ''}
                     </div>
                 `;
                 return;
@@ -975,12 +1132,10 @@
                 const maxLength = Math.max(data.dialog.person_a.length, data.dialog.person_b.length);
                 for (let i = 0; i < maxLength; i++) {
                     if (data.dialog.person_a[i]) {
-                        const safeTextA = data.dialog.person_a[i].replace(/'/g, '&#39;').replace(/"/g, '&quot;');
-                        dialogHTML += `<div class="dialog-person dialog-person-a"><strong>A:</strong> ${data.dialog.person_a[i]} <span class="speak-btn" onclick="speakText('${safeTextA}')">🔊</span></div>`;
+                        dialogHTML += `<div class="dialog-person dialog-person-a"><strong>A:</strong> ${data.dialog.person_a[i]} <span class="speak-btn" data-text="${data.dialog.person_a[i]}" data-lang="en-US">🔊</span></div>`;
                     }
                     if (data.dialog.person_b[i]) {
-                        const safeTextB = data.dialog.person_b[i].replace(/'/g, '&#39;').replace(/"/g, '&quot;');
-                        dialogHTML += `<div class="dialog-person dialog-person-b"><strong>B:</strong> ${data.dialog.person_b[i]} <span class="speak-btn" onclick="speakText('${safeTextB}')">🔊</span></div>`;
+                        dialogHTML += `<div class="dialog-person dialog-person-b"><strong>B:</strong> ${data.dialog.person_b[i]} <span class="speak-btn" data-text="${data.dialog.person_b[i]}" data-lang="en-US">🔊</span></div>`;
                     }
                 }
             }
@@ -991,25 +1146,21 @@
             const dialogTitle = isChinese ? '💬 英文對話練習' : '💬 對話練習';
             const simplifiedTitle = isChinese ? '📝 簡化英文' : '📝 簡化英文';
 
-            const safeTitleText = (data.chinese_title || '').replace(/'/g, '&#39;').replace(/"/g, '&quot;');
-            const safeContentText = (data.chinese_content || '').replace(/'/g, '&#39;').replace(/"/g, '&quot;');
-            const safeSimplifiedText = (data.simplified_english || '').replace(/'/g, '&#39;').replace(/"/g, '&quot;');
-            
             modalContent.innerHTML = `
                 <div>
-                    <h3>${translationTitle} <span class="speak-btn" onclick="speakText('${safeTitleText}', '${isChinese ? 'en-US' : 'zh-TW'}')">🔊</span></h3>
+                    <h3>${translationTitle} <span class="speak-btn" data-text="${data.chinese_title || ''}" data-lang="${isChinese ? 'en-US' : 'zh-TW'}">🔊</span></h3>
                     <h4>${data.chinese_title || '無標題'}</h4>
-                    <p>${data.chinese_content || '無內容'} <span class="speak-btn" onclick="speakText('${safeContentText}', '${isChinese ? 'en-US' : 'zh-TW'}')">🔊</span></p>
+                    <p>${data.chinese_content || '無內容'} <span class="speak-btn" data-text="${data.chinese_content || ''}" data-lang="${isChinese ? 'en-US' : 'zh-TW'}">🔊</span></p>
 
                     <h3>📚 重點單字</h3>
                     <div class="vocabulary-list">
                         ${(data.vocabulary || []).map((vocab, index) => {
-                            const safeWord = vocab.word.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
-                            const safeMeaning = vocab.meaning.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+                            const safeWord = vocab.word.replace(/"/g, '&quot;');
+                            const safeMeaning = vocab.meaning.replace(/"/g, '&quot;');
                             return `
                             <div class="vocabulary-item">
                                 <div>
-                                    <span class="vocabulary-word">${vocab.word} <span class="speak-btn" onclick="speakText('${safeWord}')">🔊</span></span>
+                                    <span class="vocabulary-word">${vocab.word} <span class="speak-btn" data-text="${vocab.word}" data-lang="en-US">🔊</span></span>
                                     <span class="vocabulary-meaning"> - ${vocab.meaning}</span>
                                 </div>
                                 <div>
@@ -1025,7 +1176,7 @@
                         `}).join('')}
                     </div>
 
-                    <h3>${simplifiedTitle} <span class="speak-btn" onclick="speakText('${safeSimplifiedText}')">🔊</span></h3>
+                    <h3>${simplifiedTitle} <span class="speak-btn" data-text="${data.simplified_english || ''}" data-lang="en-US">🔊</span></h3>
                     <div style="background: #f0f0f0; padding: 15px; border-radius: 10px;">
                         ${data.simplified_english || '無簡化版本'}
                     </div>
@@ -1116,13 +1267,25 @@
         }
 
         async function generateSentencePractice(word, meaning, index) {
+            const practiceBtn = event.target;
+            const originalText = practiceBtn.innerHTML;
+            
             try {
+                // 更新按鈕狀態為載入中
+                practiceBtn.disabled = true;
+                practiceBtn.innerHTML = '⏳ 資料產生中...';
+                practiceBtn.style.background = '#FFC107';
+                
                 showMessage('正在生成句子練習，請稍候...');
                 
                 const apiKeys = getApiKeys();
                 if (!apiKeys.openRouterApiKey) {
                     showMessage('需要設定 OpenRouter API 金鑰才能使用句子練習功能', true);
                     openSettingsModal();
+                    // 恢復按鈕狀態
+                    practiceBtn.disabled = false;
+                    practiceBtn.innerHTML = originalText;
+                    practiceBtn.style.background = '';
                     return;
                 }
 
@@ -1146,9 +1309,17 @@
                     displaySentencePractice(result.data, word, meaning);
                 } else {
                     showMessage('生成句子練習失敗：' + result.message, true);
+                    // 恢復按鈕狀態
+                    practiceBtn.disabled = false;
+                    practiceBtn.innerHTML = originalText;
+                    practiceBtn.style.background = '';
                 }
             } catch (error) {
                 showMessage('生成句子練習失敗：' + error.message, true);
+                // 恢復按鈕狀態
+                practiceBtn.disabled = false;
+                practiceBtn.innerHTML = originalText;
+                practiceBtn.style.background = '';
             }
         }
 
@@ -1175,13 +1346,12 @@
                     
                     if (practice.dialog && practice.dialog.length > 0) {
                         practice.dialog.forEach(line => {
-                            const safeEnglish = line.line.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
                             const speakerColor = line.speaker === 'A' ? '#e3f2fd' : '#f3e5f5';
                             
                             practiceHTML += `
                                 <div style="margin: 10px 0; padding: 10px; background: ${speakerColor}; border-radius: 8px;">
                                     <strong>${line.speaker}:</strong> ${line.line} 
-                                    <span class="speak-btn" onclick="speakText('${safeEnglish}')" style="cursor: pointer;">🔊</span>
+                                    <span class="speak-btn" data-text="${line.line}" data-lang="en-US" style="cursor: pointer;">🔊</span>
                                     <br><small style="color: #666;">${line.translation}</small>
                                 </div>
                             `;

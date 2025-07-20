@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💬 句子練習管理 - AI 新聞學習系統</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            color: white;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #4CAF50;
+        }
+
+        .btn-secondary {
+            background: #2196F3;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .practice-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 25px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .practice-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .practice-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+
+        .practice-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .practice-word {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .practice-meaning {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .practice-content {
+            padding: 20px;
+        }
+
+        .practice-actions {
+            padding: 15px 20px;
+            background: #f5f5f5;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toggle-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn:hover {
+            background: #1976D2;
+        }
+
+        .delete-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: #d32f2f;
+        }
+
+        .scenarios-container {
+            display: none;
+        }
+
+        .scenarios-container.expanded {
+            display: block;
+        }
+
+        .practice-summary {
+            color: #666;
+            font-size: 0.9rem;
+            padding: 10px 0;
+        }
+
+        .scenario {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 10px;
+        }
+
+        .scenario-title {
+            font-weight: bold;
+            color: #2196F3;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .dialog-line {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .dialog-a {
+            background: #e3f2fd;
+            margin-right: 20px;
+        }
+
+        .dialog-b {
+            background: #f3e5f5;
+            margin-left: 20px;
+        }
+
+        .dialog-english {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .dialog-chinese {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .speak-btn {
+            cursor: pointer;
+            margin-left: 8px;
+            font-size: 1rem;
+            transition: transform 0.2s;
+        }
+
+        .speak-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .practice-meta {
+            padding: 15px 20px;
+            background: #f5f5f5;
+            border-top: 1px solid #eee;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2rem;
+            margin: 50px 0;
+        }
+
+        .message {
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto 20px;
+        }
+
+        .message.error {
+            background: #f44336;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: white;
+            padding: 50px 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .empty-state p {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .modal-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .close {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+
+        .close:hover {
+            opacity: 0.7;
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .modal .scenario {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 10px;
+        }
+
+        .modal .scenario-title {
+            font-weight: bold;
+            color: #2196F3;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .modal .dialog-line {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .practice-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 0 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .dialog-a {
+                margin-right: 10px;
+            }
+
+            .dialog-b {
+                margin-left: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💬 句子練習管理</h1>
+        <p>已儲存的句子練習內容</p>
+    </div>
+
+    <div class="controls">
+        <a href="/" class="btn btn-secondary">
+            🏠 回到首頁
+        </a>
+        <a href="/vocabulary" class="btn btn-secondary">
+            📚 生字簿
+        </a>
+        <button id="refreshBtn" class="btn btn-primary" onclick="loadPractices()">
+            🔄 重新載入
+        </button>
+    </div>
+
+    <div id="message"></div>
+    <div id="loading" class="loading" style="display: none;">載入中...</div>
+    <div id="practiceGrid" class="practice-grid"></div>
+
+    <!-- 句子練習模態框 -->
+    <div id="practiceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title" id="modalTitle">句子練習</div>
+                    <div class="modal-subtitle" id="modalSubtitle">Practice Dialog</div>
+                </div>
+                <button class="close" onclick="closePracticeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- 對話內容將在這裡顯示 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPractices();
+        });
+
+        function showMessage(text, isError = false) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = isError ? 'message error' : 'message';
+            messageDiv.style.display = 'block';
+
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function speakText(text, lang = 'en-US') {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = lang;
+                window.speechSynthesis.speak(utterance);
+            } else {
+                showMessage('您的瀏覽器不支援語音合成功能', true);
+            }
+        }
+
+        // 事件委託處理語音播放，避免字符轉義問題
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('speak-btn') || event.target.closest('.speak-btn')) {
+                const speakElement = event.target.classList.contains('speak-btn') ? event.target : event.target.closest('.speak-btn');
+                const text = speakElement.getAttribute('data-text');
+                const lang = speakElement.getAttribute('data-lang') || 'en-US';
+                if (text) {
+                    speakText(text, lang);
+                }
+            }
+        });
+
+        async function loadPractices() {
+            showLoading(true);
+
+            try {
+                const response = await fetch('/api/sentence-practice');
+                const result = await response.json();
+
+                if (result.success) {
+                    renderPractices(result.data);
+                } else {
+                    showMessage('載入句子練習失敗：' + result.message, true);
+                }
+            } catch (error) {
+                showMessage('載入句子練習失敗：' + error.message, true);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function renderPractices(practices) {
+            const grid = document.getElementById('practiceGrid');
+            grid.innerHTML = '';
+
+            if (practices.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <h3>📝 還沒有句子練習</h3>
+                        <p>您可以在新聞學習頁面中，點擊單字旁的「句子練習」按鈕來生成練習內容</p>
+                        <a href="/" class="btn btn-primary" style="margin-top: 20px;">
+                            📰 去看新聞
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+
+            practices.forEach(practice => {
+                const practiceCard = document.createElement('div');
+                practiceCard.className = 'practice-card';
+
+                let scenariosHTML = '';
+                let dialogCount = 0;
+                
+                if (practice.practice_data && practice.practice_data.practice_dialogs) {
+                    practice.practice_data.practice_dialogs.forEach((scenario, scenarioIndex) => {
+                        scenariosHTML += `
+                            <div class="scenario">
+                                <div class="scenario-title">${scenario.scenario || `情境 ${scenarioIndex + 1}`}</div>
+                        `;
+
+                        if (scenario.dialog && scenario.dialog.length > 0) {
+                            dialogCount += scenario.dialog.length;
+                            scenario.dialog.forEach(line => {
+                                const speakerClass = line.speaker === 'A' ? 'dialog-a' : 'dialog-b';
+                                
+                                scenariosHTML += `
+                                    <div class="dialog-line ${speakerClass}">
+                                        <div class="dialog-english">
+                                            <strong>${line.speaker}:</strong> ${line.line}
+                                            <span class="speak-btn" data-text="${line.line}" data-lang="en-US">🔊</span>
+                                        </div>
+                                        <div class="dialog-chinese">${line.translation}</div>
+                                    </div>
+                                `;
+                            });
+                        }
+
+                        scenariosHTML += '</div>';
+                    });
+                }
+
+                const createdDate = new Date(practice.created_at).toLocaleDateString('zh-TW');
+                const summaryText = practice.practice_data && practice.practice_data.practice_dialogs 
+                    ? `${practice.practice_data.practice_dialogs.length} 個情境，${dialogCount} 句對話`
+                    : '暫無練習內容';
+                
+                practiceCard.innerHTML = `
+                    <div class="practice-header">
+                        <div class="practice-word">${practice.word}</div>
+                        <div class="practice-meaning">${practice.meaning}</div>
+                    </div>
+                    <div class="practice-content">
+                        <div class="practice-summary">📊 ${summaryText}</div>
+                    </div>
+                    <div class="practice-actions">
+                        <div>
+                            <button class="toggle-btn" onclick="openPracticeModal('${practice.word}', '${practice.meaning}', ${practice.id})">
+                                📖 展開對話
+                            </button>
+                        </div>
+                        <div>
+                            <span style="color: #666; font-size: 0.9rem; margin-right: 15px;">📅 ${createdDate}</span>
+                            <button class="delete-btn" onclick="deletePractice(${practice.id}, '${practice.word}')">
+                                🗑️ 刪除
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                grid.appendChild(practiceCard);
+            });
+        }
+
+        async function openPracticeModal(word, meaning, practiceId) {
+            try {
+                const response = await fetch('/api/sentence-practice');
+                const result = await response.json();
+
+                if (result.success) {
+                    const practice = result.data.find(p => p.id === practiceId);
+                    if (practice) {
+                        displayPracticeModal(practice);
+                    } else {
+                        showMessage('找不到該句子練習', true);
+                    }
+                } else {
+                    showMessage('載入句子練習失敗：' + result.message, true);
+                }
+            } catch (error) {
+                showMessage('載入句子練習失敗：' + error.message, true);
+            }
+        }
+
+        function displayPracticeModal(practice) {
+            const modal = document.getElementById('practiceModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalSubtitle = document.getElementById('modalSubtitle');
+            const modalBody = document.getElementById('modalBody');
+
+            modalTitle.textContent = `💬 ${practice.word}`;
+            modalSubtitle.textContent = practice.meaning;
+
+            let practiceHTML = '';
+            
+            if (practice.practice_data && practice.practice_data.practice_dialogs) {
+                practice.practice_data.practice_dialogs.forEach((scenario, scenarioIndex) => {
+                    practiceHTML += `
+                        <div class="scenario">
+                            <div class="scenario-title">${scenario.scenario || `情境 ${scenarioIndex + 1}`}</div>
+                    `;
+                    
+                    if (scenario.dialog && scenario.dialog.length > 0) {
+                        scenario.dialog.forEach(line => {
+                            const speakerClass = line.speaker === 'A' ? 'dialog-a' : 'dialog-b';
+                            
+                            practiceHTML += `
+                                <div class="dialog-line ${speakerClass}">
+                                    <div class="dialog-english">
+                                        <strong>${line.speaker}:</strong> ${line.line}
+                                        <span class="speak-btn" data-text="${line.line}" data-lang="en-US">🔊</span>
+                                    </div>
+                                    <div class="dialog-chinese">${line.translation}</div>
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    practiceHTML += '</div>';
+                });
+            } else {
+                practiceHTML = '<div style="text-align: center; color: #666; padding: 40px;">暫無練習內容</div>';
+            }
+
+            modalBody.innerHTML = practiceHTML;
+            modal.style.display = 'block';
+        }
+
+        function closePracticeModal() {
+            document.getElementById('practiceModal').style.display = 'none';
+        }
+
+        // 點擊模態框外部關閉
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('practiceModal');
+            if (event.target === modal) {
+                closePracticeModal();
+            }
+        });
+
+        async function deletePractice(practiceId, word) {
+            if (!confirm(`確定要刪除「${word}」的句子練習嗎？此操作無法復原。`)) return;
+
+            try {
+                const response = await fetch(`/api/sentence-practice/${practiceId}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage('句子練習已刪除');
+                    loadPractices(); // 重新載入列表
+                } else {
+                    showMessage('刪除失敗：' + result.message, true);
+                }
+            } catch (error) {
+                showMessage('刪除失敗：' + error.message, true);
+            }
+        }
+    </script>
+</body>
+</html>

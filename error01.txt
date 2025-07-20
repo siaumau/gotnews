@@ -1,0 +1,4 @@
+
+https://newsapi.org/v2/everything?q=AI&from=2025-07-19&sortBy=popularity&apiKey=e3983c59706b438885fc73941bcda473
+
+https://newsapi.org/v2/top-headlines?country=us&category=business&apiKey=e3983c59706b438885fc73941bcda473

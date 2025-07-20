@@ -145,14 +145,40 @@ class EnglishLearningTranslator:
                 # 清理回應內容，移除可能的markdown代碼塊標記
                 cleaned_content = response_content.strip()
 
-                # 尋找JSON開始和結束的位置
-                json_start = cleaned_content.find('{')
-                json_end = cleaned_content.rfind('}') + 1
+                # 多種方式嘗試提取JSON
+                json_content = None
+                
+                # 方法1：尋找```json代碼塊
+                if '```json' in cleaned_content:
+                    start = cleaned_content.find('```json') + 7
+                    end = cleaned_content.find('```', start)
+                    if end != -1:
+                        json_content = cleaned_content[start:end].strip()
+                
+                # 方法2：尋找```代碼塊（無json標記）
+                elif '```' in cleaned_content and json_content is None:
+                    start = cleaned_content.find('```') + 3
+                    end = cleaned_content.find('```', start)
+                    if end != -1:
+                        potential_json = cleaned_content[start:end].strip()
+                        # 檢查是否以{開始
+                        if potential_json.startswith('{'):
+                            json_content = potential_json
+                
+                # 方法3：直接找第一個{到最後一個}
+                if json_content is None:
+                    json_start = cleaned_content.find('{')
+                    json_end = cleaned_content.rfind('}') + 1
+                    if json_start != -1 and json_end != -1 and json_start < json_end:
+                        json_content = cleaned_content[json_start:json_end]
 
-                if json_start != -1 and json_end != -1 and json_start < json_end:
-                    # 提取純JSON部分
-                    json_content = cleaned_content[json_start:json_end]
-
+                if json_content:
+                    # 嘗試修復常見的JSON錯誤
+                    json_content = json_content.replace('\n', ' ')  # 移除換行
+                    json_content = json_content.replace('\\[', '[')  # 修復轉義
+                    json_content = json_content.replace('\\}', '}')  # 修復轉義
+                    
+                    # 嘗試解析JSON
                     parsed_result = json.loads(json_content)
 
                     # 確保所有必需的字段都存在，支援中英文兩種格式
@@ -172,40 +198,20 @@ class EnglishLearningTranslator:
                     raise json.JSONDecodeError("No valid JSON structure found", response_content, 0)
 
             except json.JSONDecodeError as e:
-                # 如果不是JSON格式，嘗試從markdown代碼塊中提取
-                try:
-                    # 尋找```json開始的代碼塊
-                    if '```json' in response_content:
-                        start = response_content.find('```json') + 7
-                        end = response_content.find('```', start)
-                        if end != -1:
-                            json_content = response_content[start:end].strip()
-                            parsed_result = json.loads(json_content)
-
-                            result = {
-                                "chinese_title": parsed_result.get("chinese_title", parsed_result.get("english_title", "翻譯失敗")),
-                                "chinese_content": parsed_result.get("chinese_content", parsed_result.get("english_content", "翻譯失敗")),
-                                "vocabulary": parsed_result.get("vocabulary", []),
-                                "dialog": parsed_result.get("dialog", {"person_a": [], "person_b": []}),
-                                "simplified_english": parsed_result.get("simplified_english", ""),
-                                "language": language,
-                                "is_chinese_source": language == 'chinese'
-                            }
-
-                            return result
-
-                    # 最後嘗試：返回錯誤信息
-                    raise e
-
-                except:
-                    return {
-                        "chinese_title": "JSON解析失敗",
-                        "chinese_content": f"原始回應前500字：{response_content[:500]}...",
-                        "vocabulary": [],
-                        "dialog": {"person_a": [], "person_b": []},
-                        "simplified_english": response_content,
-                        "error": f"JSON解析錯誤: {str(e)}"
-                    }
+                print(f"[ERROR] JSON parsing failed: {str(e)}")
+                print(f"[ERROR] Response content: {response_content[:200]}...")
+                
+                return {
+                    "chinese_title": "JSON解析失敗",
+                    "chinese_content": f"API回應解析錯誤。錯誤詳情：{str(e)}",
+                    "vocabulary": [],
+                    "dialog": {"person_a": [], "person_b": []},
+                    "simplified_english": "",
+                    "language": language,
+                    "is_chinese_source": language == 'chinese',
+                    "error": f"JSON解析錯誤: {str(e)}",
+                    "raw_response": response_content[:500]  # 保留原始回應的前500字符用於調試
+                }
 
         except Exception as e:
             return {

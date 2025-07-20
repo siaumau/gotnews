@@ -243,3 +243,9 @@ class NewsDatabase:
                 return True
         except Exception:
             return False
+    
+    def delete_sentence_practice(self, practice_id: int) -> bool:
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute("DELETE FROM sentence_practice WHERE id = ?", (practice_id,))
+            conn.commit()
+            return cursor.rowcount > 0

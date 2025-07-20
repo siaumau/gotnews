@@ -79,6 +79,88 @@
             transition: all 0.3s ease;
         }
 
+        .vocabulary-actions-row {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .practice-btn {
+            background: #FF9800;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .practice-btn:hover {
+            background: #F57C00;
+            transform: translateY(-2px);
+        }
+
+        .practice-btn.has-practice {
+            background: #4CAF50;
+        }
+
+        .practice-btn.has-practice:hover {
+            background: #388E3C;
+        }
+
+        .sentence-practice-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .sentence-practice-section.expanded {
+            display: block;
+        }
+
+        .scenario-title {
+            font-weight: bold;
+            color: #2196F3;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .practice-dialog-line {
+            margin: 8px 0;
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        .practice-dialog-a {
+            background: #e3f2fd;
+            margin-right: 15px;
+        }
+
+        .practice-dialog-b {
+            background: #f3e5f5;
+            margin-left: 15px;
+        }
+
+        .practice-dialog-english {
+            font-weight: bold;
+            margin-bottom: 3px;
+            font-size: 0.95rem;
+        }
+
+        .practice-dialog-chinese {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
         .vocabulary-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 15px 35px rgba(0,0,0,0.15);
@@ -254,6 +336,7 @@
 
     <div class="controls">
         <a href="/" class="btn btn-secondary">← 回到新聞</a>
+        <a href="/sentence-practice" class="btn btn-secondary">💬 句子練習</a>
         <button id="clearAllBtn" class="btn btn-primary" onclick="clearAllVocabulary()">🗑️ 清空生字簿</button>
     </div>
 
@@ -336,7 +419,7 @@
             
             grid.innerHTML = vocabulary.map(vocab => `
                 <div class="vocabulary-card">
-                    <div class="vocabulary-word">${vocab.word} <span class="speak-btn" onclick="speakText('${vocab.word}')">🔊</span></div>
+                    <div class="vocabulary-word">${vocab.word} <span class="speak-btn" data-text="${vocab.word}" data-lang="en-US">🔊</span></div>
                     <div class="vocabulary-meaning">${vocab.meaning}</div>
                     <div class="vocabulary-level">${vocab.level}</div>
                     <div class="vocabulary-source" onclick="showSourceArticle(${vocab.source_article_id}, '${vocab.source_article_title}')">
@@ -345,13 +428,16 @@
                     <div class="vocabulary-date">
                         加入時間：${new Date(vocab.created_at).toLocaleDateString('zh-TW')}
                     </div>
-                    <div class="vocabulary-actions">
-                        <button class="practice-btn" onclick="openSentencePracticeModal('${vocab.word}', '${vocab.meaning}')">
-                            句子練習
+                    <div class="vocabulary-actions-row">
+                        <button class="practice-btn ${vocab.has_practice ? 'has-practice' : ''}" 
+                                onclick="${vocab.has_practice ? `showPracticeDialog('${vocab.word}', ${vocab.id})` : `generatePracticeForVocab('${vocab.word}', '${vocab.meaning}', ${vocab.id})`}">
+                            ${vocab.has_practice ? '💬 查看練習' : '📝 生成練習'}
                         </button>
-                        <button class="delete-btn" onclick="deleteVocabulary(${vocab.id})">
-                            刪除
-                        </button>
+                        ${vocab.has_practice ? `<a href="/sentence-practice" target="_blank" class="practice-btn has-practice">🔗 管理頁面</a>` : ''}
+                        <button class="delete-btn" onclick="deleteVocabulary(${vocab.id})">🗑️ 刪除</button>
+                    </div>
+                    <div class="sentence-practice-section" id="practice-${vocab.id}">
+                        <!-- 句子練習內容將在這裡顯示 -->
                     </div>
                 </div>
             `).join('');
@@ -416,6 +502,130 @@
             document.getElementById('sourceModal').style.display = 'none';
         }
 
+        async function generatePracticeForVocab(word, meaning, vocabId) {
+            const practiceBtn = document.querySelector(`[onclick*="generatePracticeForVocab('${word}'"]`);
+            const originalText = practiceBtn.innerHTML;
+            
+            try {
+                // 更新按鈕狀態為載入中
+                practiceBtn.disabled = true;
+                practiceBtn.innerHTML = '⏳ 資料產生中...';
+                practiceBtn.style.background = '#FFC107';
+                
+                showMessage('正在生成句子練習，請稍候...');
+                
+                const apiKeys = getApiKeys();
+                if (!apiKeys.openRouterApiKey) {
+                    showMessage('需要設定 OpenRouter API 金鑰才能使用句子練習功能', true);
+                    // 恢復按鈕狀態
+                    practiceBtn.disabled = false;
+                    practiceBtn.innerHTML = originalText;
+                    practiceBtn.style.background = '';
+                    return;
+                }
+
+                const response = await fetch('/api/sentence-practice', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        word: word,
+                        meaning: meaning,
+                        vocab_id: vocabId,
+                        openrouter_api_key: apiKeys.openRouterApiKey
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const cacheStatus = result.cached ? '（已快取）' : '（新生成）';
+                    showMessage(`句子練習已生成 ${cacheStatus}`);
+                    loadVocabulary(); // 重新載入生字簿以更新按鈕狀態
+                } else {
+                    showMessage('生成句子練習失敗：' + result.message, true);
+                    // 恢復按鈕狀態
+                    practiceBtn.disabled = false;
+                    practiceBtn.innerHTML = originalText;
+                    practiceBtn.style.background = '';
+                }
+            } catch (error) {
+                showMessage('生成句子練習失敗：' + error.message, true);
+                // 恢復按鈕狀態
+                practiceBtn.disabled = false;
+                practiceBtn.innerHTML = originalText;
+                practiceBtn.style.background = '';
+            }
+        }
+
+        async function showPracticeDialog(word, vocabId) {
+            try {
+                const response = await fetch('/api/sentence-practice');
+                const result = await response.json();
+
+                if (result.success) {
+                    const practice = result.data.find(p => p.word === word);
+                    if (practice) {
+                        displayPracticeInCard(practice, vocabId);
+                    } else {
+                        showMessage('找不到該單字的句子練習', true);
+                    }
+                } else {
+                    showMessage('載入句子練習失敗：' + result.message, true);
+                }
+            } catch (error) {
+                showMessage('載入句子練習失敗：' + error.message, true);
+            }
+        }
+
+        function displayPracticeInCard(practice, vocabId) {
+            const practiceSection = document.getElementById(`practice-${vocabId}`);
+            
+            let practiceHTML = '';
+            
+            if (practice.practice_data && practice.practice_data.practice_dialogs) {
+                practice.practice_data.practice_dialogs.forEach((scenario, scenarioIndex) => {
+                    practiceHTML += `
+                        <div style="margin-bottom: 15px;">
+                            <div class="scenario-title">${scenario.scenario || `情境 ${scenarioIndex + 1}`}</div>
+                    `;
+                    
+                    if (scenario.dialog && scenario.dialog.length > 0) {
+                        scenario.dialog.forEach(line => {
+                            const speakerClass = line.speaker === 'A' ? 'practice-dialog-a' : 'practice-dialog-b';
+                            
+                            practiceHTML += `
+                                <div class="practice-dialog-line ${speakerClass}">
+                                    <div class="practice-dialog-english">
+                                        <strong>${line.speaker}:</strong> ${line.line}
+                                        <span class="speak-btn" data-text="${line.line}" data-lang="en-US" style="cursor: pointer; margin-left: 8px;">🔊</span>
+                                    </div>
+                                    <div class="practice-dialog-chinese">${line.translation}</div>
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    practiceHTML += '</div>';
+                });
+            }
+
+            practiceHTML += `
+                <div style="text-align: center; margin-top: 10px;">
+                    <button class="practice-btn" onclick="hidePracticeDialog(${vocabId})">📕 收起</button>
+                </div>
+            `;
+
+            practiceSection.innerHTML = practiceHTML;
+            practiceSection.classList.add('expanded');
+        }
+
+        function hidePracticeDialog(vocabId) {
+            const practiceSection = document.getElementById(`practice-${vocabId}`);
+            practiceSection.classList.remove('expanded');
+        }
+
         function speakText(text, lang = 'en-US') {
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(text);
@@ -425,6 +635,18 @@
                 showMessage('您的瀏覽器不支援語音合成功能', true);
             }
         }
+
+        // 事件委託處理語音播放，避免字符轉義問題
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('speak-btn') || event.target.closest('.speak-btn')) {
+                const speakElement = event.target.classList.contains('speak-btn') ? event.target : event.target.closest('.speak-btn');
+                const text = speakElement.getAttribute('data-text');
+                const lang = speakElement.getAttribute('data-lang') || 'en-US';
+                if (text) {
+                    speakText(text, lang);
+                }
+            }
+        });
 
         function getApiKeys() {
             return {
