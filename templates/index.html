@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔍 AI 新聞資料抓取與呈現系統</title>
+    <title>🔍 AI 新聞資料抓取與呈現系統.</title>
     <style>
         * {
             margin: 0;
@@ -1269,15 +1269,15 @@
         async function generateSentencePractice(word, meaning, index) {
             const practiceBtn = event.target;
             const originalText = practiceBtn.innerHTML;
-            
+
             try {
                 // 更新按鈕狀態為載入中
                 practiceBtn.disabled = true;
                 practiceBtn.innerHTML = '⏳ 資料產生中...';
                 practiceBtn.style.background = '#FFC107';
-                
+
                 showMessage('正在生成句子練習，請稍候...');
-                
+
                 const apiKeys = getApiKeys();
                 if (!apiKeys.openRouterApiKey) {
                     showMessage('需要設定 OpenRouter API 金鑰才能使用句子練習功能', true);
@@ -1327,9 +1327,9 @@
             const modal = document.getElementById('learningModal');
             const modalContent = document.getElementById('modalContent');
             const modalTitle = document.getElementById('learningModalTitle');
-            
+
             modalTitle.textContent = `💬 句子練習 - ${word}`;
-            
+
             let practiceHTML = `
                 <div style="margin-bottom: 20px; padding: 15px; background: #e3f2fd; border-radius: 10px;">
                     <h3>📝 練習單字：${word}</h3>
@@ -1343,21 +1343,21 @@
                         <div style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 10px;">
                             <h4 style="color: #2196F3; margin-bottom: 15px;">${practice.scenario || `情境 ${practiceIndex + 1}`}</h4>
                     `;
-                    
+
                     if (practice.dialog && practice.dialog.length > 0) {
                         practice.dialog.forEach(line => {
                             const speakerColor = line.speaker === 'A' ? '#e3f2fd' : '#f3e5f5';
-                            
+
                             practiceHTML += `
                                 <div style="margin: 10px 0; padding: 10px; background: ${speakerColor}; border-radius: 8px;">
-                                    <strong>${line.speaker}:</strong> ${line.line} 
+                                    <strong>${line.speaker}:</strong> ${line.line}
                                     <span class="speak-btn" data-text="${line.line}" data-lang="en-US" style="cursor: pointer;">🔊</span>
                                     <br><small style="color: #666;">${line.translation}</small>
                                 </div>
                             `;
                         });
                     }
-                    
+
                     practiceHTML += `</div>`;
                 });
             } else {
