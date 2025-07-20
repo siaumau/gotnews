@@ -116,7 +116,7 @@ class EnglishLearningTranslator:
             }
 
             payload = {
-                "model": "deepseek/deepseek-chat-v3-0324:free",
+                "model": "meta-llama/llama-3.2-3b-instruct",
                 "messages": [
                     {
                         "role": "user",
@@ -264,7 +264,7 @@ class EnglishLearningTranslator:
             }
 
             payload = {
-                "model": "deepseek/deepseek-chat-v3-0324:free",
+                "model": "meta-llama/llama-3.2-3b-instruct",
                 "messages": [
                     {
                         "role": "user",
