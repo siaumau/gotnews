@@ -118,7 +118,7 @@ class EnglishLearningTranslator:
             }
 
             payload = {
-                "model": "meta-llama/llama-3.2-3b-instruct",
+                "model": "google/gemma-2-9b-it",
                 "messages": [
                     {
                         "role": "user",
@@ -147,14 +147,14 @@ class EnglishLearningTranslator:
 
                 # 多種方式嘗試提取JSON
                 json_content = None
-                
+
                 # 方法1：尋找```json代碼塊
                 if '```json' in cleaned_content:
                     start = cleaned_content.find('```json') + 7
                     end = cleaned_content.find('```', start)
                     if end != -1:
                         json_content = cleaned_content[start:end].strip()
-                
+
                 # 方法2：尋找```代碼塊（無json標記）
                 elif '```' in cleaned_content and json_content is None:
                     start = cleaned_content.find('```') + 3
@@ -164,7 +164,7 @@ class EnglishLearningTranslator:
                         # 檢查是否以{開始
                         if potential_json.startswith('{'):
                             json_content = potential_json
-                
+
                 # 方法3：直接找第一個{到最後一個}
                 if json_content is None:
                     json_start = cleaned_content.find('{')
@@ -177,7 +177,7 @@ class EnglishLearningTranslator:
                     json_content = json_content.replace('\n', ' ')  # 移除換行
                     json_content = json_content.replace('\\[', '[')  # 修復轉義
                     json_content = json_content.replace('\\}', '}')  # 修復轉義
-                    
+
                     # 嘗試解析JSON
                     parsed_result = json.loads(json_content)
 
@@ -200,7 +200,7 @@ class EnglishLearningTranslator:
             except json.JSONDecodeError as e:
                 print(f"[ERROR] JSON parsing failed: {str(e)}")
                 print(f"[ERROR] Response content: {response_content[:200]}...")
-                
+
                 return {
                     "chinese_title": "JSON解析失敗",
                     "chinese_content": f"API回應解析錯誤。錯誤詳情：{str(e)}",
@@ -261,7 +261,7 @@ class EnglishLearningTranslator:
                 }}
             ]
         }}
-        
+
         重要要求：
         1. 對話中的 "line" 必須是**英文句子**，不可以是中文。
         2. 每個對話至少包含提供的單字 "{word}" 一次。
@@ -278,7 +278,7 @@ class EnglishLearningTranslator:
             }
 
             payload = {
-                "model": "meta-llama/llama-3.2-3b-instruct",
+                "model": "google/gemma-2-9b-it",
                 "messages": [
                     {
                         "role": "user",
