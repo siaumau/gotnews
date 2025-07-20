@@ -61,8 +61,8 @@ class EnglishLearningTranslator:
                 "english_title": "English title translation",
                 "english_content": "English content translation",
                 "vocabulary": [
-                    {{"word": "word", "meaning": "中文意思", "level": "{level}"}},
-                    {{"word": "word", "meaning": "中文意思", "level": "next level"}}
+                    {{"word": "English word", "meaning": "中文意思", "level": "{level}"}},
+                    {{"word": "English word", "meaning": "中文意思", "level": "next level"}}
                 ],
                 "dialog": {{
                     "person_a": ["English dialog 1", "English dialog 2", "English dialog 3"],
@@ -71,10 +71,11 @@ class EnglishLearningTranslator:
                 "simplified_english": "Simple English version for {level} learners"
             }}
 
-            要求：
-            1. vocabulary 包含5-7個重要英文單字，並標註它們對應的 {target_levels} 等級。
-            2. dialog 用簡單的英文對話，內容與新聞相關。
-            3. simplified_english 是為 {level} 等級學習者準備的簡化版。
+            重要要求：
+            1. vocabulary 必須包含5-7個重要的**英文單字**，並標註它們對應的 {target_levels} 等級。
+            2. dialog 必須用簡單的**英文對話**，內容與新聞相關。
+            3. simplified_english 是為 {level} 等級學習者準備的簡化版**英文**。
+            4. 所有學習內容（vocabulary, dialog, simplified_english）都必須是英文，不可以是中文。
             """
         else:
             # 英文翻譯成中文
@@ -100,11 +101,12 @@ class EnglishLearningTranslator:
                 "simplified_english": "簡化的英文版本適合 {level} 等級學習者"
             }}
 
-            要求：
+            重要要求：
             1. 只返回純JSON。
-            2. vocabulary 包含5-7個重要英文單字，並標註它們對應的 {target_levels} 等級。
-            3. dialog 用簡單的英文對話，內容與新聞相關。
-            4. simplified_english 是為 {level} 等級學習者準備的簡化版英文。
+            2. vocabulary 必須包含5-7個重要的**英文單字**，並標註它們對應的 {target_levels} 等級。
+            3. dialog 必須用簡單的**英文對話**，內容與新聞相關。
+            4. simplified_english 是為 {level} 等級學習者準備的簡化版**英文**。
+            5. 所有學習內容（vocabulary, dialog, simplified_english）都必須是英文，不可以是中文。
             """
 
         try:
@@ -253,6 +255,12 @@ class EnglishLearningTranslator:
                 }}
             ]
         }}
+        
+        重要要求：
+        1. 對話中的 "line" 必須是**英文句子**，不可以是中文。
+        2. 每個對話至少包含提供的單字 "{word}" 一次。
+        3. 英文句子要簡單易懂，適合英文學習者。
+        4. translation 提供準確的中文翻譯。
         """
 
         try:

@@ -50,6 +50,18 @@ class NewsDatabase:
                 )
             """)
             
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS sentence_practice (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    word TEXT,
+                    meaning TEXT,
+                    practice_data TEXT,
+                    source_vocabulary_id INTEGER,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (source_vocabulary_id) REFERENCES vocabulary (id)
+                )
+            """)
+            
             conn.commit()
     
     def insert_article(self, article: Dict) -> bool:
@@ -170,3 +182,64 @@ class NewsDatabase:
             cursor = conn.execute("DELETE FROM vocabulary WHERE id = ?", (vocab_id,))
             conn.commit()
             return cursor.rowcount > 0
+    
+    def save_sentence_practice(self, word: str, meaning: str, practice_data: Dict, source_vocabulary_id: int) -> bool:
+        try:
+            import json
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("""
+                    INSERT OR REPLACE INTO sentence_practice 
+                    (word, meaning, practice_data, source_vocabulary_id)
+                    VALUES (?, ?, ?, ?)
+                """, (
+                    word,
+                    meaning,
+                    json.dumps(practice_data, ensure_ascii=False),
+                    source_vocabulary_id
+                ))
+                conn.commit()
+                return True
+        except Exception as e:
+            print(f"Error saving sentence practice: {e}")
+            return False
+    
+    def get_sentence_practice(self, word: str) -> Optional[Dict]:
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute("SELECT * FROM sentence_practice WHERE word = ?", (word,))
+            row = cursor.fetchone()
+            if row:
+                import json
+                result = dict(row)
+                try:
+                    if isinstance(result['practice_data'], str):
+                        result['practice_data'] = json.loads(result['practice_data'])
+                except (json.JSONDecodeError, TypeError):
+                    result['practice_data'] = {}
+                return result
+            return None
+    
+    def get_all_sentence_practices(self) -> List[Dict]:
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.execute("SELECT * FROM sentence_practice ORDER BY created_at DESC")
+            practices = []
+            for row in cursor.fetchall():
+                import json
+                result = dict(row)
+                try:
+                    if isinstance(result['practice_data'], str):
+                        result['practice_data'] = json.loads(result['practice_data'])
+                except (json.JSONDecodeError, TypeError):
+                    result['practice_data'] = {}
+                practices.append(result)
+            return practices
+    
+    def clear_translations(self) -> bool:
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute("DELETE FROM article_translations")
+                conn.commit()
+                return True
+        except Exception:
+            return False

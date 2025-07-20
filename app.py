@@ -235,10 +235,66 @@ def vocabulary_page():
 @app.route('/api/clear-translations', methods=['POST'])
 def clear_translations():
     try:
-        with sqlite3.connect(db.db_path) as conn:
-            conn.execute("DELETE FROM article_translations")
-            conn.commit()
-        return jsonify({'success': True, 'message': 'All translations cleared'})
+        success = db.clear_translations()
+        if success:
+            return jsonify({'success': True, 'message': 'All translations cleared'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to clear translations'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/sentence-practice', methods=['POST'])
+def generate_sentence_practice():
+    try:
+        data = request.get_json() or {}
+        word = data.get('word')
+        meaning = data.get('meaning')
+        vocab_id = data.get('vocab_id')
+        openrouter_api_key = data.get('openrouter_api_key')
+
+        if not openrouter_api_key:
+            return jsonify({
+                'success': False,
+                'message': 'OpenRouter API key is required'
+            }), 400
+
+        if not word or not meaning:
+            return jsonify({'success': False, 'message': 'Word and meaning are required'}), 400
+
+        # Check if practice already exists
+        existing_practice = db.get_sentence_practice(word)
+        if existing_practice:
+            return jsonify({
+                'success': True,
+                'data': existing_practice['practice_data'],
+                'cached': True
+            })
+
+        # Generate new practice
+        translator = EnglishLearningTranslator(openrouter_api_key)
+        practice_data = translator.generate_sentence_practice(word, meaning)
+
+        if practice_data.get('error'):
+            return jsonify({'success': False, 'message': practice_data.get('error')})
+
+        # Save to database
+        save_success = db.save_sentence_practice(word, meaning, practice_data, vocab_id)
+        
+        return jsonify({
+            'success': True,
+            'data': practice_data,
+            'cached': False,
+            'saved': save_success
+        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/sentence-practice', methods=['GET'])
+def get_all_sentence_practices():
+    try:
+        practices = db.get_all_sentence_practices()
+        return jsonify({'success': True, 'data': practices})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
