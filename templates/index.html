@@ -378,6 +378,40 @@
             gap: 15px;
         }
 
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 0;
+            gap: 10px;
+        }
+
+        .pagination-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            color: white;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
         @media (max-width: 768px) {
             .articles-grid {
                 grid-template-columns: 1fr;
@@ -492,6 +526,7 @@
     <div id="message"></div>
     <div id="loading" class="loading" style="display: none;">載入中...</div>
     <div id="articlesGrid" class="articles-grid"></div>
+    <div id="paginationControls" class="pagination"></div>
 
     <!-- 學習模態框 -->
     <div id="learningModal" class="modal">
@@ -657,10 +692,11 @@
 
     <script>
         let currentView = 'all';
+        let currentPage = 1;
 
         document.addEventListener('DOMContentLoaded', function() {
             checkApiKeys();
-            loadArticles();
+            loadArticles(currentPage);
 
             document.getElementById('updateBtn').addEventListener('click', openNewsUpdateModal);
             document.getElementById('showAllBtn').addEventListener('click', () => showArticles('all'));
@@ -863,7 +899,7 @@
 
                 if (data.success) {
                     showMessage(`成功更新！獲取 ${data.total_fetched} 篇文章，新增 ${data.saved_count} 篇`);
-                    loadArticles();
+                    loadArticles(1); // 更新後回到第一頁
                     closeNewsUpdateModal();
                 } else {
                     showMessage(data.message, true);
@@ -876,15 +912,18 @@
             }
         }
 
-        async function loadArticles() {
+        async function loadArticles(page = 1) {
             showLoading(true);
+            currentPage = page;
 
             try {
-                const url = currentView === 'favorites' ? '/api/articles?favorites=true' : '/api/articles';
+                const favorites = currentView === 'favorites' ? 'true' : 'false';
+                const url = `/api/articles?favorites=${favorites}&page=${page}`;
                 const response = await fetch(url);
-                const articles = await response.json();
+                const data = await response.json();
 
-                renderArticles(articles);
+                renderArticles(data.articles);
+                renderPagination(data.page, data.total_pages);
             } catch (error) {
                 showMessage('載入文章失敗：' + error.message, true);
             } finally {
@@ -894,11 +933,12 @@
 
         function showArticles(view) {
             currentView = view;
+            currentPage = 1; // 切換視圖時回到第一頁
 
             document.getElementById('showAllBtn').className = view === 'all' ? 'btn btn-primary' : 'btn btn-secondary';
             document.getElementById('showFavoritesBtn').className = view === 'favorites' ? 'btn btn-primary' : 'btn btn-secondary';
 
-            loadArticles();
+            loadArticles(currentPage);
         }
 
         function renderArticles(articles) {
@@ -948,6 +988,35 @@
             });
         }
 
+        function renderPagination(page, totalPages) {
+            const paginationControls = document.getElementById('paginationControls');
+            paginationControls.innerHTML = '';
+
+            if (totalPages <= 1) {
+                return;
+            }
+
+            const prevButton = document.createElement('button');
+            prevButton.textContent = '« 上一頁';
+            prevButton.className = 'pagination-btn';
+            prevButton.disabled = page <= 1;
+            prevButton.onclick = () => loadArticles(page - 1);
+
+            const pageInfo = document.createElement('span');
+            pageInfo.textContent = `第 ${page} / ${totalPages} 頁`;
+            pageInfo.className = 'pagination-info';
+
+            const nextButton = document.createElement('button');
+            nextButton.textContent = '下一頁 »';
+            nextButton.className = 'pagination-btn';
+            nextButton.disabled = page >= totalPages;
+            nextButton.onclick = () => loadArticles(page + 1);
+
+            paginationControls.appendChild(prevButton);
+            paginationControls.appendChild(pageInfo);
+            paginationControls.appendChild(nextButton);
+        }
+
         async function toggleFavorite(articleId) {
             try {
                 const response = await fetch(`/api/articles/${articleId}/favorite`, {
@@ -956,7 +1025,7 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    loadArticles();
+                    loadArticles(currentPage);
                 } else {
                     showMessage(data.message, true);
                 }
@@ -976,7 +1045,7 @@
 
                 if (data.success) {
                     showMessage('文章已刪除');
-                    loadArticles();
+                    loadArticles(currentPage);
                 } else {
                     showMessage(data.message, true);
                 }

@@ -25,13 +25,26 @@ def index():
 @app.route('/api/articles')
 def get_articles():
     show_favorites = request.args.get('favorites', 'false').lower() == 'true'
+    page = request.args.get('page', 1, type=int)
+    per_page = 24
 
     if show_favorites:
-        articles = db.get_favorite_articles()
+        all_articles = db.get_favorite_articles()
     else:
-        articles = db.get_all_articles()
+        all_articles = db.get_all_articles()
 
-    return jsonify(articles)
+    total_items = len(all_articles)
+    start_index = (page - 1) * per_page
+    end_index = start_index + per_page
+    paginated_articles = all_articles[start_index:end_index]
+    total_pages = (total_items + per_page - 1) // per_page
+
+    return jsonify({
+        'articles': paginated_articles,
+        'page': page,
+        'total_pages': total_pages,
+        'total_items': total_items
+    })
 
 @app.route('/api/update', methods=['POST'])
 def update_news():
@@ -252,7 +265,8 @@ def practice_vocabulary():
             for line in practice.get('dialog', []):
                 # Escape quotes to prevent JavaScript syntax errors
                 safe_line = line.get("line", "").replace('"', '&quot;').replace("'", "&#39;")
-                html += f'<p><strong>{line.get("speaker")}:</strong> {line.get("line")} <span class="speak-btn" onclick="speakText(\'{safe_line}\')">🔊</span><br><small>{line.get("translation")}</small></p>'
+                # FIX: Use triple quotes for the f-string to handle inner quotes cleanly
+                html += f'''<p><strong>{line.get("speaker")}:</strong> {line.get("line")} <span class="speak-btn" onclick="speakText('{safe_line}')">🔊</span><br><small>{line.get("translation")}</small></p>'''
             html += "<hr>"
 
         return jsonify({'success': True, 'html': html})
